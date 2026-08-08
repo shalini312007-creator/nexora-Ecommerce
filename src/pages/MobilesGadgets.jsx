@@ -22,7 +22,7 @@ function MobilesGadgets() {
     {
       name: "Power Bank",
       price: "₹1,499",
-      image: "https://coolnutindia.com/wp-content/uploads/2023/11/post-01-10000-mAh.jpg"
+      image: "https://vlebazaar.in/image/cache/catalog/Xiaomi-Pocket-Power-Bank-10000mAh-225W-with-Built-in-Cable-Super-Fast-Ch/Xiaomi-Pocket-Power-Bank-10000mAh-225W-with-Built-in-Cable-Super-Fast-Charging-P-1000x1000h.jpg"
     }
   ];
   const addToCart = (product) => {

@@ -1,194 +1,235 @@
+
+
+.fashion-page {
+  background: #f5f6fa;
+  min-height: 100vh;
+}
+
 /* =========================
-   FashionDresses.css
+   Banner
 ========================= */
 
-.fashion-page{
-  background:#f5f6fa;
-  min-height:100vh;
+.fashion-banner {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: white;
+  text-align: center;
+  padding: 70px 20px;
 }
 
-/* Banner */
-
-.fashion-banner{
-  background:linear-gradient(135deg,#8b5cf6,#ec4899);
-  color:white;
-  text-align:center;
-  padding:70px 20px;
+.fashion-banner h1 {
+  font-size: 42px;
+  margin-bottom: 12px;
+  font-weight: 700;
 }
 
-.fashion-banner h1{
-  font-size:42px;
-  margin-bottom:12px;
-  font-weight:700;
+.fashion-banner p {
+  font-size: 18px;
+  opacity: 0.95;
 }
 
-.fashion-banner p{
-  font-size:18px;
-  opacity:0.95;
+/* =========================
+   Products Grid
+========================= */
+
+.fashion-products {
+  max-width: 1400px;
+  margin: auto;
+  padding: 50px 30px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
 }
 
-/* Products Grid */
+/* =========================
+   Product Card
+========================= */
 
-.fashion-products{
-  max-width:1400px;
-  margin:auto;
-  padding:50px 30px;
+.fashion-card {
+  background: #fff;
+  border-radius: 15px;
+  overflow: hidden;
 
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-  gap:30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+
+  transition: all 0.3s ease;
+
+  /* IMPORTANT */
+  text-align: center;
 }
 
-/* Product Card */
-
-.fashion-card{
-  background:#fff;
-  border-radius:15px;
-  overflow:hidden;
-
-  box-shadow:0 4px 15px rgba(0,0,0,0.08);
-
-  transition:all 0.3s ease;
+.fashion-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
-.fashion-card:hover{
-  transform:translateY(-8px);
-  box-shadow:0 10px 25px rgba(0,0,0,0.15);
+/* =========================
+   Product Image
+========================= */
+
+.fashion-card img {
+  width: 100%;
+  height: 350px;
+
+  display: block;
+
+  object-fit: contain;
+  object-position: center;
+
+  background: #fafafa;
+  padding: 10px;
 }
 
-/* Image */
+/* =========================
+   Product Name
+========================= */
 
-.fashion-card img{
-  width:100%;
-  height:350px;
+.fashion-card h3 {
+  font-size: 20px;
+  color: #222;
 
-  display:block;
+  margin: 15px 15px 10px;
 
-  object-fit:contain;      /* shows full dress */
-  object-position:center;
-
-  background:#fafafa;
-  padding:10px;
+  text-align: center;
 }
 
-/* Content */
+/* =========================
+   Price
+========================= */
 
-.fashion-card h3{
-  font-size:20px;
-  color:#222;
-  margin:15px 15px 10px;
+.fashion-card .price {
+  color: #e91e63;
+  font-size: 22px;
+  font-weight: bold;
+
+  margin: 0 0 15px;
+
+  text-align: center;
 }
 
-.price{
-  color:#e91e63;
-  font-size:22px;
-  font-weight:bold;
-  margin-bottom:15px;
+/* =========================
+   Add To Cart Button
+========================= */
+
+.fashion-card button {
+  display: block;
+
+  margin: 0 auto 20px;
+
+  padding: 12px 25px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #8b5cf6;
+  color: white;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: all 0.3s ease;
 }
 
-/* Button */
-
-.fashion-card button{
-  margin-bottom:20px;
-  padding:12px 25px;
-
-  border:none;
-  border-radius:8px;
-
-  background:#8b5cf6;
-  color:white;
-
-  font-size:15px;
-  font-weight:600;
-
-  cursor:pointer;
-  transition:0.3s;
+.fashion-card button:hover {
+  background: #7c3aed;
+  transform: translateY(-2px);
 }
 
-.fashion-card button:hover{
-  background:#7c3aed;
-}
+/* =========================
+   Toast Message
+========================= */
 
-/* Responsive */
-
-@media(max-width:992px){
-
-  .fashion-products{
-    grid-template-columns:
-    repeat(auto-fit,minmax(250px,1fr));
-  }
-
-  .fashion-card img{
-    height:300px;
-  }
-
-}
-
-@media(max-width:768px){
-
-  .fashion-banner{
-    padding:50px 15px;
-  }
-
-  .fashion-banner h1{
-    font-size:32px;
-  }
-
-  .fashion-banner p{
-    font-size:16px;
-  }
-
-  .fashion-products{
-    padding:25px 15px;
-    gap:20px;
-  }
-
-  .fashion-card img{
-    height:280px;
-  }
-
-}
-
-@media(max-width:480px){
-
-  .fashion-banner h1{
-    font-size:28px;
-  }
-
-  .fashion-card img{
-    height:250px;
-  }
-
-  .fashion-card h3{
-    font-size:18px;
-  }
-
-  .price{
-    font-size:20px;
-  }
-}
-.toast{
+.toast {
   position: fixed;
+
   top: 20px;
   right: 20px;
+
   background: #28a745;
   color: white;
+
   padding: 15px 25px;
+
   border-radius: 8px;
+
   font-size: 16px;
   font-weight: bold;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+
   z-index: 9999;
+
   animation: slideIn 0.3s ease;
 }
 
-@keyframes slideIn{
-  from{
-      transform: translateX(100%);
-      opacity: 0;
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
   }
-  to{
-      transform: translateX(0);
-      opacity: 1;
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 992px) {
+  .fashion-products {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(250px, 1fr)
+    );
+  }
+
+  .fashion-card img {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .fashion-banner {
+    padding: 50px 15px;
+  }
+
+  .fashion-banner h1 {
+    font-size: 32px;
+  }
+
+  .fashion-banner p {
+    font-size: 16px;
+  }
+
+  .fashion-products {
+    padding: 25px 15px;
+    gap: 20px;
+  }
+
+  .fashion-card img {
+    height: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fashion-banner h1 {
+    font-size: 28px;
+  }
+
+  .fashion-card img {
+    height: 250px;
+  }
+
+  .fashion-card h3 {
+    font-size: 18px;
+  }
+
+  .fashion-card .price {
+    font-size: 20px;
   }
 }
