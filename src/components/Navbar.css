@@ -1,0 +1,28 @@
+.navbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 40px;
+    background:#4f46e5;
+  }
+  
+  .logo{
+    color:white;
+  }
+  
+  .nav-links{
+    display:flex;
+    gap:20px;
+    list-style:none;
+  }
+  
+  .nav-links a{
+    color:white;
+    text-decoration:none;
+  }
+  
+  .login-btn{
+    padding:10px 15px;
+    border:none;
+    border-radius:5px;
+  }

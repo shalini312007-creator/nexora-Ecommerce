@@ -1,0 +1,163 @@
+.cart-page{
+  max-width:1000px;
+  margin:40px auto;
+  padding:20px;
+  background:#f5f5f5;
+  min-height:100vh;
+}
+
+.cart-page h1{
+  text-align:center;
+  margin-bottom:30px;
+  color:#232f3e;
+  font-size:35px;
+}
+
+.empty-cart{
+  background:white;
+  padding:60px;
+  text-align:center;
+  border-radius:12px;
+  box-shadow:0 4px 10px rgba(0,0,0,.1);
+}
+
+/* Product Card */
+
+.cart-card{
+  display:flex;
+  align-items:center;
+  gap:20px;
+  background:white;
+  padding:18px;
+  margin-bottom:20px;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+/* Product Image */
+
+.cart-card img{
+  width:100px;
+  height:100px;
+  object-fit:contain;
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:10px;
+  padding:8px;
+}
+
+/* Product Details */
+
+.cart-details{
+  flex:1;
+}
+
+.cart-details h3{
+  color:#232f3e;
+  margin-bottom:10px;
+  font-size:20px;
+}
+
+.cart-details h4{
+  color:#ff9900;
+  margin-bottom:15px;
+}
+
+/* Quantity */
+
+.quantity{
+  display:flex;
+  align-items:center;
+  gap:15px;
+  margin-bottom:15px;
+}
+
+.quantity button{
+  width:35px;
+  height:35px;
+  border:none;
+  border-radius:50%;
+  background:#232f3e;
+  color:white;
+  font-size:20px;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.quantity button:hover{
+  background:#ff9900;
+}
+
+.quantity span{
+  font-size:18px;
+  font-weight:bold;
+}
+
+/* Remove Button */
+
+.remove-btn{
+  padding:10px 18px;
+  background:#dc3545;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.remove-btn:hover{
+  background:#b91c1c;
+}
+
+/* Total */
+
+.cart-total{
+  margin-top:30px;
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  text-align:right;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+
+.cart-total h2{
+  color:#232f3e;
+}
+
+/* Checkout */
+
+.checkout-btn{
+  margin-top:20px;
+  padding:14px 28px;
+  border:none;
+  border-radius:8px;
+  background:#ff9900;
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.checkout-btn:hover{
+  background:#e68a00;
+}
+
+/* Mobile */
+
+@media(max-width:768px){
+
+.cart-card{
+  flex-direction:column;
+  text-align:center;
+}
+
+.cart-card img{
+  width:90px;
+  height:90px;
+}
+
+.cart-total{
+  text-align:center;
+}
+
+}

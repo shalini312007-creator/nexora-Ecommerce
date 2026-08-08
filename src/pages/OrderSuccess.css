@@ -1,0 +1,45 @@
+.success-page{
+    background:#f5f5f5;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.success-box{
+    background:white;
+    padding:50px;
+    text-align:center;
+    border-radius:15px;
+    box-shadow:0 4px 12px rgba(0,0,0,.1);
+    width:500px;
+}
+
+.success-box h1{
+    color:#2e7d32;
+    margin-bottom:20px;
+}
+
+.success-box p{
+    font-size:18px;
+    margin:10px 0;
+}
+
+.success-box h3{
+    color:#ff6f00;
+    margin:25px 0;
+}
+
+.success-box button{
+    background:#232f3e;
+    color:white;
+    border:none;
+    padding:14px 30px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:17px;
+}
+
+.success-box button:hover{
+    background:#37475a;
+}

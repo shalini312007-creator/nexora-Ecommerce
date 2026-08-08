@@ -1,0 +1,86 @@
+.books-banner{
+  background:linear-gradient(135deg,#4338ca,#6366f1);
+  color:white;
+  text-align:center;
+  padding:60px;
+}
+
+.books-grid{
+  padding:40px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:25px;
+}
+
+.books-card{
+  background:white;
+  border-radius:12px;
+  overflow:hidden;
+  text-align:center;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  transition:0.3s;
+}
+
+.books-card:hover{
+  transform:translateY(-5px);
+}
+
+.books-card img{
+  width:100%;
+  height:300px;
+  object-fit:contain;
+  background:#f8f8f8;
+  padding:10px;
+  display:block;
+}
+
+.books-card h3{
+  margin:15px 10px;
+  color:#333;
+}
+
+.books-card p{
+  color:#4338ca;
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:15px;
+}
+
+.books-card button{
+  margin-bottom:15px;
+  padding:10px 20px;
+  border:none;
+  border-radius:5px;
+  background:#4338ca;
+  color:white;
+  cursor:pointer;
+}
+
+.books-card button:hover{
+  background:#312e81;
+}
+.toast{
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #28a745;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  z-index: 9999;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn{
+  from{
+      transform: translateX(100%);
+      opacity: 0;
+  }
+  to{
+      transform: translateX(0);
+      opacity: 1;
+  }
+}

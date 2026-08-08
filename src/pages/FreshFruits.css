@@ -1,0 +1,124 @@
+.fruits-page{
+    background:#f5f5f5;
+    min-height:100vh;
+  }
+  
+  .fruits-banner{
+    background:linear-gradient(
+      135deg,
+      #22c55e,
+      #16a34a
+    );
+  
+    color:white;
+    text-align:center;
+    padding:60px 20px;
+  }
+  
+  .fruits-banner h1{
+    font-size:42px;
+    margin-bottom:10px;
+  }
+  
+  .fruits-banner p{
+    font-size:18px;
+  }
+  
+  .fruits-grid{
+    padding:40px;
+  
+    display:grid;
+    grid-template-columns:
+    repeat(auto-fit,minmax(250px,1fr));
+  
+    gap:25px;
+  }
+  
+  .fruit-card{
+    background:white;
+    border-radius:15px;
+    overflow:hidden;
+  
+    box-shadow:
+    0 4px 12px rgba(0,0,0,0.1);
+  
+    text-align:center;
+  
+    transition:0.3s;
+  }
+  
+  .fruit-card:hover{
+    transform:translateY(-5px);
+  }
+  
+  .fruit-card img{
+    width:100%;
+    height:220px;
+    object-fit:cover;
+  }
+  
+  .fruit-card h3{
+    margin:15px 0 10px;
+    color:#222;
+  }
+  
+  .fruit-price{
+    color:#16a34a;
+    font-size:18px;
+    font-weight:bold;
+    margin-bottom:15px;
+  }
+  
+  .fruit-card button{
+    margin-bottom:20px;
+    padding:10px 20px;
+  
+    border:none;
+    border-radius:6px;
+  
+    background:#22c55e;
+    color:white;
+  
+    cursor:pointer;
+  }
+  
+  .fruit-card button:hover{
+    background:#15803d;
+  }
+  
+  @media(max-width:768px){
+  
+    .fruits-banner h1{
+      font-size:32px;
+    }
+  
+    .fruits-grid{
+      padding:20px;
+    }
+  
+  }
+  .toast{
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn{
+    from{
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to{
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

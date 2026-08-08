@@ -1,0 +1,76 @@
+.toys-banner{
+  background:linear-gradient(135deg,#ec4899,#f472b6);
+  color:white;
+  text-align:center;
+  padding:60px;
+}
+
+.toys-grid{
+  padding:40px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:25px;
+}
+
+.toys-card{
+  background:white;
+  border-radius:12px;
+  overflow:hidden;
+  text-align:center;
+  padding-bottom:20px;
+}
+
+.toys-card img{
+  width:100%;
+  height:220px;
+  object-fit:cover;
+}
+
+/* Add to Cart Button */
+
+.toys-card button{
+  margin-top:15px;
+  padding:10px 20px;
+  background:#ff9900;
+  color:white;
+  border:none;
+  border-radius:6px;
+  font-size:15px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+.toys-card button:hover{
+  background:#e68a00;
+  transform:scale(1.05);
+}
+
+/* Toast Message */
+
+.toast{
+  position:fixed;
+  top:20px;
+  right:20px;
+  background:#28a745;
+  color:white;
+  padding:15px 25px;
+  border-radius:8px;
+  font-size:16px;
+  font-weight:bold;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
+  z-index:9999;
+  animation:slideIn .3s ease;
+}
+
+@keyframes slideIn{
+  from{
+      transform:translateX(100%);
+      opacity:0;
+  }
+
+  to{
+      transform:translateX(0);
+      opacity:1;
+  }
+}

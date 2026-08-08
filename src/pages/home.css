@@ -1,0 +1,25 @@
+.home{
+    background:#f5f5f5;
+    min-height:100vh;
+  }
+  
+  /* Space between sections */
+  .home section{
+    margin-bottom:20px;
+  }
+  
+  /* Optional container styling */
+  .home h2{
+    color:#333;
+    font-weight:600;
+  }
+  
+  /* Responsive Design */
+  
+  @media (max-width:768px){
+  
+    .home{
+      overflow-x:hidden;
+    }
+  
+  }
