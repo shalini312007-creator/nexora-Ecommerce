@@ -11,8 +11,7 @@ function Hero() {
       <div className="hero-content">
 
         <h1>
-          Everything You Need,
-          All in One Place
+          Everything You NEED
         </h1>
 
         <p>
