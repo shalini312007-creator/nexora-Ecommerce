@@ -1,59 +1,77 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./FreshVegetables.css";
 
 function FreshVegetables() {
-  const [message, setMessage] = useState("");
-  const vegetables = [
-    { name: "Tomatoes", price: "₹40/kg", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJLa2lx2BnMCWYk6Bv_hzFrYemHFURVAHtxDPkxabcwA&s=10" },
-    { name: "Carrots", price: "₹60/kg", image: "https://www.trustbasket.com/cdn/shop/articles/Carrot.jpg?v=1688378789" },
-    { name: "Potatoes", price: "₹35/kg", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJg4few-oaxMZCF07YkQNB4VPgRv_RWetgFR_2y5sEYw&s=10" },
-    { name: "Onions", price: "₹45/kg", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJdFIntCS8-Luro9iXtQY4fbr8RrOrRPgqb_prnlhw-A&s=10" },
-    {
-      name: "Carrot",
-      price: "₹40 / kg",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRGbWyjIGw66LYx8KkE9p8bH0vGFZ_NFHnApdCABp-R5w&s=10"
-    },
-    {
-      name: "Cauliflower",
-      price: "₹35 / piece",
-      image: "https://www.starquik.com/cdn/shop/files/1052169_PDP1_908fa9dc-4734-4857-96ec-3e2b36723589.jpg?v=1779259869"
-    }
-  ];
-  const addToCart = (product) => {
+  const navigate = useNavigate();
 
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-  
+  const [message, setMessage] = useState("");
+  const [vegetables, setVegetables] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        const vegetableProducts = data.filter(
+          (product) => product.category === "Vegetables"
+        );
+
+        setVegetables(vegetableProducts);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Vegetables error:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const addToCart = (product) => {
+    let cart =
+      JSON.parse(localStorage.getItem("cart")) || [];
+
     const existing = cart.find(
-      item => item.name === product.name
+      (item) => item._id === product._id
     );
-  
-    if(existing){
+
+    if (existing) {
       existing.quantity += 1;
-    }else{
+    } else {
       cart.push({
         ...product,
-        quantity:1
+        price: `₹${product.price}`,
+        quantity: 1
       });
     }
-  
+
     localStorage.setItem(
       "cart",
       JSON.stringify(cart)
     );
-    setMessage(product.name + " added to cart!");
 
-setTimeout(() => {
-  setMessage("");
-}, 2000);
+    setMessage(
+      product.name + " added to cart!"
+    );
+
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
   };
+
   return (
     <div className="vegetables-page">
+
       {message && (
         <div className="toast">
-          {message}
+          ✓ {message}
         </div>
       )}
-  
 
       <div className="vegetables-banner">
         <h1>Fresh Vegetables</h1>
@@ -61,16 +79,47 @@ setTimeout(() => {
       </div>
 
       <div className="vegetables-grid">
-        {vegetables.map((item,index)=>(
-          <div className="vegetable-card" key={index}>
-            <img src={item.image} alt={item.name}/>
-            <h3>{item.name}</h3>
-            <p>{item.price}</p>
-            <button onClick={() => addToCart(item)}>
-  Add to Cart
-</button>
-          </div>
-        ))}
+
+        {loading && (
+          <p>Loading vegetables...</p>
+        )}
+
+        {!loading &&
+          vegetables.map((item) => (
+            <div
+              className="vegetable-card"
+              key={item._id}
+              onClick={() =>
+                navigate(`/product/${item._id}`)
+              }
+            >
+              <img
+                src={item.image}
+                alt={item.name}
+              />
+
+              <h3>{item.name}</h3>
+
+              <p>₹{item.price}</p>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(item);
+                }}
+              >
+                Add to Cart
+              </button>
+            </div>
+          ))}
+
+        {!loading &&
+          vegetables.length === 0 && (
+            <p>
+              No vegetables available.
+            </p>
+          )}
+
       </div>
 
     </div>

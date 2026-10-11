@@ -1,0 +1,103 @@
+
+/* Main toast popup */
+.nexora-global-toast {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  z-index: 10000;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  max-width: 400px;
+  padding: 14px 20px;
+  border-radius: 10px;
+
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+
+  /* Fade in, then fade out */
+  opacity: 0;
+  animation:
+    nexoraToastFadeIn 0.3s ease forwards,
+    nexoraToastFadeOut 0.5s ease 2.5s forwards;
+
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+
+/* Success popup */
+.nexora-global-toast.success {
+  background-color: #28a745;
+}
+
+/* Error popup */
+.nexora-global-toast.error {
+  background-color: #dc3545;
+}
+
+/* Check or error icon */
+.nexora-global-toast .toast-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Fade in */
+@keyframes nexoraToastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(25px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Fade out after 2.5 seconds */
+@keyframes nexoraToastFadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+    visibility: hidden;
+  }
+}
+
+/* Responsive design for mobile */
+@media (max-width: 480px) {
+  .nexora-global-toast {
+    top: 15px;
+    right: 12px;
+    left: 12px;
+
+    max-width: none;
+    box-sizing: border-box;
+    padding: 12px 15px;
+    font-size: 13px;
+  }
+}

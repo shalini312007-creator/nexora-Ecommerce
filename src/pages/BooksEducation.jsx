@@ -1,66 +1,117 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./BooksEducation.css";
 
 function BooksEducation() {
-  const [message, setMessage] = useState("");
-  const books = [
-    { name:"React Guide", price:"₹699", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRzyLyPw4J8TM_Nrwg1pG0pjqAyNhSI7pTPxNNKD2C2GQ&s=10" },
-    { name:"Java Programming", price:"₹799", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSdKN9H4KbfbWNrFLw0slh3iYy9c4mYGPkwVe7cgrVqQ&s=10" },
-    { name:"Data Structures", price:"₹899", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCmVXmjE4FzknQ80RAh_h9LDr1pMUIo913ZjLLp0yDbA&s=10" },
-    { name:"Aptitude Book", price:"₹499", image:"https://m.media-amazon.com/images/I/81JPH4BD4DL._AC_UF1000,1000_QL80_.jpg" }
-  ];
-  const addToCart = (product) => {
+  const navigate = useNavigate();
 
+  const [message, setMessage] = useState("");
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        const bookProducts = data.filter(
+          (product) => product.category === "Books & Education"
+        );
+
+        setBooks(bookProducts);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Books error:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const addToCart = (product) => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-  
+
     const existing = cart.find(
-      item => item.name === product.name
+      (item) => item._id === product._id
     );
-  
-    if(existing){
+
+    if (existing) {
       existing.quantity += 1;
-    }else{
+    } else {
       cart.push({
         ...product,
-        quantity:1
+        price: `₹${product.price}`,
+        quantity: 1
       });
     }
-  
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(cart)
-    );
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
     setMessage(product.name + " added to cart!");
 
-setTimeout(() => {
-  setMessage("");
-}, 2000);
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
   };
+
   return (
     <div className="books-page">
+
       {message && (
         <div className="toast">
-          {message}
+          ✓ {message}
         </div>
       )}
-  
 
       <div className="books-banner">
         <h1>Books & Education</h1>
+        <p>Learn, Explore and Grow with the Right Resources</p>
       </div>
 
       <div className="books-grid">
 
-        {books.map((item,index)=>(
-          <div className="books-card" key={index}>
-            <img src={item.image} alt={item.name}/>
-            <h3>{item.name}</h3>
-            <p>{item.price}</p>
-            <button onClick={() => addToCart(item)}>
-  Add to Cart
-</button>
-          </div>
-        ))}
+        {loading && (
+          <p>Loading books and education products...</p>
+        )}
+
+        {!loading &&
+          books.map((item) => (
+            <div
+              className="books-card"
+              key={item._id}
+              onClick={() =>
+                navigate(`/product/${item._id}`)
+              }
+            >
+
+              <img
+                src={item.image}
+                alt={item.name}
+              />
+
+              <h3>{item.name}</h3>
+
+              <p>₹{item.price}</p>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(item);
+                }}
+              >
+                Add to Cart
+              </button>
+
+            </div>
+          ))}
+
+        {!loading && books.length === 0 && (
+          <p>No books and education products available.</p>
+        )}
 
       </div>
 

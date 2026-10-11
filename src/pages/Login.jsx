@@ -3,13 +3,23 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
 function Login() {
-
   const navigate = useNavigate();
 
   const [login, setLogin] = useState({
     email: "",
     password: ""
   });
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const showToast = (message, type = "success") => {
+    sessionStorage.setItem(
+      "nexoraToast",
+      JSON.stringify({ message, type })
+    );
+
+    window.dispatchEvent(new Event("nexora-toast"));
+  };
 
   const handleChange = (e) => {
     setLogin({
@@ -18,49 +28,95 @@ function Login() {
     });
   };
 
-  const loginUser = () => {
+  const loginUser = async () => {
+    if (isLoading) return;
 
-    const user = JSON.parse(localStorage.getItem("user"));
-
-    if (!user) {
-      alert("No account found. Please register first.");
+    if (!login.email.trim() || !login.password) {
+      showToast("Please enter your email and password.", "error");
       return;
     }
 
-    if (
-      user.email === login.email &&
-      user.password === login.password
-    ) {
+    setIsLoading(true);
 
-      // Save login details
-      localStorage.setItem("loggedIn", "true");
+    // Stop waiting if the backend does not respond in 15 seconds.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 15000);
 
-      localStorage.setItem(
-        "currentUser",
-        JSON.stringify(user)
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email: login.email.trim(),
+            password: login.password
+          }),
+          signal: controller.signal
+        }
       );
 
-      alert("Login Successful!");
+      const data = await response.json();
 
-      // Go to profile
+      if (!response.ok) {
+        showToast(
+          data.message || "Login failed. Please try again.",
+          "error"
+        );
+        return;
+      }
+
+      if (!data.token || !data.user) {
+        showToast("Invalid response from the server.", "error");
+        return;
+      }
+
+      localStorage.setItem("loggedIn", "true");
+      localStorage.setItem("currentUser", JSON.stringify(data.user));
+      localStorage.setItem("authToken", data.token);
+
+      // Preserve the success message across navigation/reload.
+      sessionStorage.setItem(
+        "nexoraToast",
+        JSON.stringify({
+          message: "Login successful!",
+          type: "success"
+        })
+      );
+
       navigate("/profile");
 
-      // Refresh so Navbar updates
+      // Keep your existing Navbar refresh behavior.
       setTimeout(() => {
         window.location.reload();
       }, 100);
 
-    } else {
+    } catch (error) {
+      console.error("Login error:", error);
 
-      alert("Invalid Email or Password");
-
+      if (error.name === "AbortError") {
+        showToast(
+          "The server is taking too long to respond. Please check your backend and MongoDB connection.",
+          "error"
+        );
+      } else {
+        showToast(
+          "Cannot connect to the server. Check that your backend is running.",
+          "error"
+        );
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setIsLoading(false);
     }
   };
 
   return (
-
     <div className="login-page">
-
       <h1>Login</h1>
 
       <input
@@ -69,6 +125,7 @@ function Login() {
         placeholder="Email"
         value={login.email}
         onChange={handleChange}
+        disabled={isLoading}
       />
 
       <input
@@ -77,19 +134,22 @@ function Login() {
         placeholder="Password"
         value={login.password}
         onChange={handleChange}
+        disabled={isLoading}
       />
 
-      <button onClick={loginUser}>
-        Login
+      <button
+        type="button"
+        onClick={loginUser}
+        disabled={isLoading}
+      >
+        {isLoading ? "Logging in..." : "Login"}
       </button>
 
       <p style={{ marginTop: "20px" }}>
         Don't have an account?
         <Link to="/register"> Register</Link>
       </p>
-
     </div>
-
   );
 }
 

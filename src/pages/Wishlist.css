@@ -1,0 +1,383 @@
+/* =========================================
+   NEXORA WISHLIST
+   Flipkart-inspired professional layout
+   ========================================= */
+
+   .wishlist-page {
+    min-height: 100vh;
+    padding: 30px 6% 60px;
+    background: #f5f6f8;
+    box-sizing: border-box;
+  }
+  
+  /* HEADER */
+  
+  .wishlist-header {
+    max-width: 1200px;
+    margin: 0 auto 20px;
+    background: #ffffff;
+    padding: 22px 25px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  
+  .wishlist-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #212121;
+  }
+  
+  .wishlist-header p {
+    margin: 6px 0 0;
+    color: #878787;
+    font-size: 14px;
+  }
+  
+  /* CONTAINER */
+  
+  .wishlist-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* CARD */
+  
+  .wishlist-card {
+    position: relative;
+    display: flex;
+    gap: 25px;
+    background: #ffffff;
+    padding: 25px;
+    min-height: 220px;
+    border-radius: 4px;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  
+  /* REMOVE BUTTON */
+  
+  .wishlist-remove {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+  
+    width: 30px;
+    height: 30px;
+  
+    border: none;
+    background: transparent;
+  
+    font-size: 25px;
+    color: #878787;
+  
+    cursor: pointer;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .wishlist-remove:hover {
+    color: #212121;
+  }
+  
+  /* IMAGE */
+  
+  .wishlist-image-box {
+    width: 220px;
+    height: 200px;
+  
+    flex-shrink: 0;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    cursor: pointer;
+  }
+  
+  .wishlist-image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  
+    transition: transform 0.2s ease;
+  }
+  
+  .wishlist-image-box:hover img {
+    transform: scale(1.04);
+  }
+  
+  /* INFO */
+  
+  .wishlist-info {
+    flex: 1;
+    padding: 5px 35px 5px 0;
+  }
+  
+  .wishlist-category {
+    margin: 0 0 8px;
+  
+    font-size: 12px;
+    font-weight: 600;
+  
+    color: #2874f0;
+  
+    text-transform: uppercase;
+  }
+  
+  .wishlist-info h3 {
+    margin: 0 0 10px;
+  
+    font-size: 19px;
+    font-weight: 500;
+  
+    color: #212121;
+  
+    cursor: pointer;
+  }
+  
+  .wishlist-info h3:hover {
+    color: #2874f0;
+  }
+  
+  /* RATING */
+  
+  .wishlist-rating {
+    margin-bottom: 12px;
+  }
+  
+  .wishlist-rating span {
+    display: inline-block;
+  
+    padding: 4px 7px;
+  
+    background: #388e3c;
+    color: #ffffff;
+  
+    border-radius: 3px;
+  
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .wishlist-rating small {
+    color: #878787;
+    font-size: 12px;
+  }
+  
+  /* PRICE */
+  
+  .wishlist-price {
+    font-size: 22px;
+    font-weight: 600;
+    color: #212121;
+    margin-bottom: 22px;
+  }
+  
+  /* ACTIONS */
+  
+  .wishlist-actions {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .wishlist-cart-btn,
+  .wishlist-view-btn {
+    height: 42px;
+  
+    padding: 0 22px;
+  
+    border: none;
+    border-radius: 3px;
+  
+    font-size: 14px;
+    font-weight: 600;
+  
+    cursor: pointer;
+  
+    transition: 0.2s ease;
+  }
+  
+  .wishlist-cart-btn {
+    background: #ff9f00;
+    color: #ffffff;
+  }
+  
+  .wishlist-cart-btn:hover {
+    background: #e88f00;
+  }
+  
+  .wishlist-view-btn {
+    background: #2874f0;
+    color: #ffffff;
+  }
+  
+  .wishlist-view-btn:hover {
+    background: #1f63d4;
+  }
+  
+  /* EMPTY WISHLIST */
+  
+  .wishlist-empty {
+    max-width: 1200px;
+    min-height: 450px;
+  
+    margin: 0 auto;
+  
+    background: #ffffff;
+  
+    display: flex;
+    flex-direction: column;
+  
+    align-items: center;
+    justify-content: center;
+  
+    text-align: center;
+  
+    border-radius: 4px;
+  
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  
+  .wishlist-empty-icon {
+    width: 90px;
+    height: 90px;
+  
+    border-radius: 50%;
+  
+    background: #f5f6f8;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    font-size: 55px;
+    color: #2874f0;
+  
+    margin-bottom: 20px;
+  }
+  
+  .wishlist-empty h2 {
+    margin: 0 0 10px;
+  
+    font-size: 22px;
+    color: #212121;
+  }
+  
+  .wishlist-empty p {
+    margin: 0 0 25px;
+  
+    color: #878787;
+  
+    font-size: 14px;
+  }
+  
+  .wishlist-empty button {
+    padding: 12px 30px;
+  
+    border: none;
+    border-radius: 3px;
+  
+    background: #2874f0;
+    color: #ffffff;
+  
+    font-size: 14px;
+    font-weight: 600;
+  
+    cursor: pointer;
+  }
+  
+  .wishlist-empty button:hover {
+    background: #1f63d4;
+  }
+  
+  /* TOAST */
+  
+  .wishlist-toast {
+    position: fixed;
+  
+    top: 25px;
+    right: 25px;
+  
+    background: #28a745;
+    color: #ffffff;
+  
+    padding: 14px 22px;
+  
+    border-radius: 7px;
+  
+    font-size: 14px;
+    font-weight: 600;
+  
+    z-index: 99999;
+  
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  }
+  
+  /* RESPONSIVE */
+  
+  @media (max-width: 768px) {
+  
+    .wishlist-page {
+      padding: 20px 4% 40px;
+    }
+  
+    .wishlist-card {
+      gap: 18px;
+      padding: 20px;
+    }
+  
+    .wishlist-image-box {
+      width: 160px;
+      height: 170px;
+    }
+  
+    .wishlist-info h3 {
+      font-size: 17px;
+    }
+  
+    .wishlist-price {
+      font-size: 20px;
+    }
+  
+  }
+  
+  @media (max-width: 600px) {
+  
+    .wishlist-card {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  
+    .wishlist-image-box {
+      width: 200px;
+      height: 190px;
+    }
+  
+    .wishlist-info {
+      width: 100%;
+      padding: 0;
+    }
+  
+    .wishlist-actions {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  
+    .wishlist-cart-btn,
+    .wishlist-view-btn {
+      flex: 1;
+      min-width: 130px;
+    }
+  
+    .wishlist-category {
+      margin-top: 5px;
+    }
+  
+  }

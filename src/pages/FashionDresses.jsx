@@ -1,77 +1,71 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./FashionDresses.css";
 
 function FashionDresses() {
-  const [message, setMessage] = useState("");
-  const products = [
-    {
-      name: "Women's Casual Dress",
-      price: "₹1,299",
-      image: "https://m.media-amazon.com/images/I/81OFbThGbsL._AC_UY1100_.jpg"
-    },
-    {
-      name: "Party Wear Dress",
-      price: "₹1,999",
-      image: "https://stylady.in/cdn/shop/files/photo_2024-08-01_18-46-09.jpg?v=1723972575"
-    },
-    {
-      name: "Summer Collection",
-      price: "₹899",
-      image: "https://chidiyaa.com/cdn/shop/files/63_98f49c7b-bc23-4ce2-b4e4-698e1c1124c9.jpg?v=1776066747&width=960"
-    },
-    {
-      name: "Designer Dresses",
-      price: "₹2,499",
-      image: "https://www.cdnensemble.xyz/pub/media/resized/product/644_964_21825sk71-1.jpg"
-    },
-    {
-      name: "Floral Maxi Dress",
-      price: "₹1,799",
-      image: "https://assets.ajio.com/medias/sys_master/root/20250110/0prw/6781372b0431850e0d92746e/-1117Wx1400H-701040430-blue-MODEL.jpg"
-    },
-    {
-      name: "Traditional Ethnic Gown",
-      price: "₹2,299",
-      image: "https://ekantastudio.com/cdn/shop/files/DSC02488_9b3164a8-8a21-4106-a716-89f1cc1038a9.jpg?v=1755498929"
-    },
-  
-    
-  ];
-  const addToCart = (product) => {
+  const navigate = useNavigate();
 
+  const [message, setMessage] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        const fashionProducts = data.filter(
+          (product) => product.category === "Fashion"
+        );
+
+        setProducts(fashionProducts);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Fashion error:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const addToCart = (product) => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-  
+
     const existing = cart.find(
-      item => item.name === product.name
+      (item) => item._id === product._id
     );
-  
-    if(existing){
+
+    if (existing) {
       existing.quantity += 1;
-    }else{
+    } else {
       cart.push({
         ...product,
-        quantity:1
+        price: `₹${product.price}`,
+        quantity: 1
       });
     }
-  
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(cart)
-    );
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
     setMessage(product.name + " added to cart!");
 
-setTimeout(() => {
-  setMessage("");
-}, 2000);
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
   };
+
   return (
     <div className="fashion-page">
+
       {message && (
         <div className="toast">
-          {message}
+          ✓ {message}
         </div>
       )}
-  
 
       <div className="fashion-banner">
         <h1>Fashion & Dresses</h1>
@@ -82,29 +76,48 @@ setTimeout(() => {
 
       <div className="fashion-products">
 
-        {products.map((item, index) => (
-          <div className="fashion-card" key={index}>
+        {loading && (
+          <p>Loading fashion products...</p>
+        )}
 
-            <img
-              src={item.image}
-              alt={item.name}
-            />
+        {!loading &&
+          products.map((item) => (
+            <div
+              className="fashion-card"
+              key={item._id}
+              onClick={() =>
+                navigate(`/product/${item._id}`)
+              }
+            >
 
-            <h3>{item.name}</h3>
+              <img
+                src={item.image}
+                alt={item.name}
+              />
 
-            <p className="price">
-              {item.price}
-            </p>
+              <h3>{item.name}</h3>
 
-            <button onClick={() => addToCart(item)}>
-  Add to Cart
-</button>
+              <p className="price">
+                ₹{item.price}
+              </p>
 
-          </div>
-        ))}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(item);
+                }}
+              >
+                Add to Cart
+              </button>
+
+            </div>
+          ))}
+
+        {!loading && products.length === 0 && (
+          <p>No fashion products available.</p>
+        )}
 
       </div>
-
     </div>
   );
 }

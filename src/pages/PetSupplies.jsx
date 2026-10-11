@@ -1,66 +1,117 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./PetSupplies.css";
 
 function PetSupplies() {
-  const [message, setMessage] = useState("");
-  const pets = [
-    { name:"Dog Food", price:"₹899", image:"https://img.magnific.com/free-photo/healthy-fresh-pet-food-ingredients-dark-surface_1150-42077.jpg" },
-    { name:"Pet Toy", price:"₹299", image:"https://static.vecteezy.com/system/resources/thumbnails/040/873/620/small/ai-generated-joyful-dog-playing-with-toys-in-a-cozy-living-room-setting-creating-a-warm-and-inviting-atmosphere-photo.jpeg" },
-    { name:"Cat Food", price:"₹699", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFfCzqenNvh3kwxAR--DnvDTj1tcaUPlQ0omW3i411UQ&s=10" },
-    { name:"Pet Bed", price:"₹1,499", image:"https://m.media-amazon.com/images/I/81H7u8LhG7L._AC_UF1000,1000_QL80_.jpg" }
-  ];
-  const addToCart = (product) => {
+  const navigate = useNavigate();
 
+  const [message, setMessage] = useState("");
+  const [pets, setPets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        const petProducts = data.filter(
+          (product) => product.category === "Pet Supplies"
+        );
+
+        setPets(petProducts);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Pet Supplies error:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const addToCart = (product) => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-  
+
     const existing = cart.find(
-      item => item.name === product.name
+      (item) => item._id === product._id
     );
-  
-    if(existing){
+
+    if (existing) {
       existing.quantity += 1;
-    }else{
+    } else {
       cart.push({
         ...product,
-        quantity:1
+        price: `₹${product.price}`,
+        quantity: 1
       });
     }
-  
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(cart)
-    );
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
     setMessage(product.name + " added to cart!");
 
-setTimeout(() => {
-  setMessage("");
-}, 2000);
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
   };
+
   return (
     <div className="pets-page">
+
       {message && (
         <div className="toast">
-          {message}
+          ✓ {message}
         </div>
       )}
-  
 
       <div className="pets-banner">
         <h1>Pet Supplies</h1>
+        <p>Everything Your Pets Need</p>
       </div>
 
       <div className="pets-grid">
 
-        {pets.map((item,index)=>(
-          <div className="pets-card" key={index}>
-            <img src={item.image} alt={item.name}/>
-            <h3>{item.name}</h3>
-            <p>{item.price}</p>
-            <button onClick={() => addToCart(item)}>
-  Add to Cart
-</button>
-          </div>
-        ))}
+        {loading && (
+          <p>Loading pet supplies...</p>
+        )}
+
+        {!loading &&
+          pets.map((item) => (
+            <div
+              className="pets-card"
+              key={item._id}
+              onClick={() =>
+                navigate(`/product/${item._id}`)
+              }
+            >
+
+              <img
+                src={item.image}
+                alt={item.name}
+              />
+
+              <h3>{item.name}</h3>
+
+              <p>₹{item.price}</p>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(item);
+                }}
+              >
+                Add to Cart
+              </button>
+
+            </div>
+          ))}
+
+        {!loading && pets.length === 0 && (
+          <p>No pet supplies available.</p>
+        )}
 
       </div>
 

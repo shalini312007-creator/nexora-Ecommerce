@@ -51,6 +51,12 @@ function Categories() {
       image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQH3Q5xuPryptW8t_l4EwNSvnfNyWnQnIHSn6c6998rng&s=10",
       desc: "Food, Toys and Accessories for Pets",
       link: "/pet-supplies"
+    },
+    {
+      title: "Dairy Products",
+      image: "https://images.unsplash.com/photo-1563636619-e9143da7973b",
+      desc: "Fresh Milk, Paneer, Cheese, Curd & Butter",
+      link: "/dairy"
     }
   ];
 

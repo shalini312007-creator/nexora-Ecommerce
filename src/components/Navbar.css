@@ -1,104 +1,547 @@
+/* =========================================
+   NEXORA NAVBAR
+========================================= */
 
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 40px;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
   position: sticky;
   top: 0;
   z-index: 1000;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+
+  gap: 20px;
+
+  padding: 14px 5%;
+
+  background: #1a1a1a;
+
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
 }
 
-/* Logo */
+
+/* =========================================
+   LOGO
+========================================= */
 
 .logo {
+  flex-shrink: 0;
+
   margin: 0;
+
+  color: #6d28d9;
   font-size: 26px;
-  font-weight: 700;
-}
+  font-weight: 800;
 
-.logo a {
-  color: white;
+  letter-spacing: 0.5px;
+
   text-decoration: none;
+
+  transition: color 0.2s ease;
 }
 
-/* Navigation */
+.logo:hover {
+  color: #8b5cf6;
+}
+
+
+/* =========================================
+   NAVIGATION LINKS
+========================================= */
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 24px;
+
+  gap: 18px;
+
+  margin: 0;
+  padding: 0;
+
   list-style: none;
+
+  flex-shrink: 0;
+}
+
+.nav-links li {
   margin: 0;
   padding: 0;
 }
 
 .nav-links a {
-  color: white;
-  text-decoration: none;
-  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+
+  color: #ffffff;
+
+  font-size: 14px;
   font-weight: 500;
-  transition: 0.3s ease;
+
+  text-decoration: none;
+
+  white-space: nowrap;
+
+  transition: color 0.2s ease;
 }
 
 .nav-links a:hover {
-  color: #ddd6fe;
+  color: #c7d2fe;
 }
 
-/* Login Button */
 
-.login-btn {
-  padding: 10px 18px;
+/* =========================================
+   SEARCH BAR
+========================================= */
+
+.navbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 240px;
+  min-width: 240px;
+  height: 38px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* =========================================
+   SEARCH INPUT WRAPPER
+========================================= */
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 38px;
+}
+
+/* =========================================
+   SEARCH INPUT
+========================================= */
+
+.navbar-search input {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 45px 0 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  outline: none;
+  background: #ffffff;
+  color: #212121;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.navbar-search input::placeholder {
+  color: #777777;
+}
+
+.navbar-search input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+/* =========================================
+   SEARCH BUTTON — flex overlay, no absolute math
+========================================= */
+
+.search-button {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0;
+  padding: 0;
+
   border: none;
-  border-radius: 8px;
-  background: white;
+  border-radius: 5px;
+  background: transparent;
+  color: #4b5563;
   cursor: pointer;
-  transition: 0.3s ease;
+  z-index: 10;
+  box-sizing: border-box;
+
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.login-btn a {
+.search-button:hover {
+  background: #f3f4f6;
   color: #4f46e5;
-  text-decoration: none;
+}
+
+.search-button svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  flex-shrink: 0;
+}
+
+
+/* =========================================
+   LUCIDE SEARCH ICON
+========================================= */
+
+.search-button svg {
+  width: 18px;
+  height: 18px;
+
+  display: block;
+
+  stroke: currentColor;
+
+  stroke-width: 2.2;
+}
+
+
+/* =========================================
+   SEARCH SUGGESTIONS
+========================================= */
+
+.search-suggestions {
+  position: absolute;
+
+  top: 44px;
+  left: 0;
+
+  width: 240px;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 6px;
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+
+  z-index: 99999;
+}
+
+
+/* =========================================
+   SEARCH SUGGESTION ITEM
+========================================= */
+
+.search-suggestion-item {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  gap: 10px;
+
+  padding: 10px 12px;
+
+  border: none;
+  border-bottom: 1px solid #f1f1f1;
+
+  background: #ffffff;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.search-suggestion-item:hover {
+  background: #f7f7f7;
+}
+
+.search-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+
+/* =========================================
+   SUGGESTION IMAGE
+========================================= */
+
+.search-suggestion-item img {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  object-fit: contain;
+}
+
+
+/* =========================================
+   SUGGESTION INFORMATION
+========================================= */
+
+.suggestion-info {
+  display: flex;
+
+  min-width: 0;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.suggestion-info strong {
+  overflow: hidden;
+
+  color: #212121;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.suggestion-info span {
+  color: #555555;
+
+  font-size: 12px;
   font-weight: 600;
 }
 
-.login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.18);
+
+/* =========================================
+   NAVBAR ACTIONS
+========================================= */
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 18px;
+
+  flex-shrink: 0;
 }
 
-/* =========================
-   TABLET
-========================= */
+
+/* =========================================
+   NAVBAR ICON LINKS
+========================================= */
+
+.navbar-icon-link {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  color: #ffffff;
+
+  text-decoration: none;
+
+  transition: color 0.2s ease;
+}
+
+.navbar-icon-link:hover {
+  color: #c7d2fe;
+}
+
+.navbar-icon-link svg {
+  width: 21px;
+  height: 21px;
+
+  display: block;
+
+  stroke: currentColor;
+
+  stroke-width: 2;
+}
+
+
+/* =========================================
+   WISHLIST
+========================================= */
+
+.wishlist-link {
+  width: 24px;
+  height: 28px;
+}
+
+
+/* =========================================
+   CART LABEL
+========================================= */
+
+.icon-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+
+/* =========================================
+   BADGE
+========================================= */
+
+.navbar-badge {
+  position: absolute;
+
+  top: -7px;
+  right: -9px;
+
+  min-width: 17px;
+  height: 17px;
+
+  padding: 0 4px;
+
+  display: grid;
+  place-items: center;
+
+  box-sizing: border-box;
+
+  border: 1px solid #1a1a1a;
+
+  border-radius: 999px;
+
+  background: #ef4444;
+
+  color: #ffffff;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  line-height: 1;
+}
+
+
+/* =========================================
+   LOGIN / PROFILE BUTTON
+========================================= */
+
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  padding: 9px 13px;
+
+  border: none;
+  border-radius: 6px;
+
+  background: #ffffff;
+
+  color: #4f46e5;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  text-decoration: none;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.login-btn:hover {
+  background: #f3f4f6;
+
+  color: #4338ca;
+}
+
+
+/* =========================================
+   RESPONSIVE - 1100px
+========================================= */
+
+@media (max-width: 1100px) {
+
+  .navbar {
+    gap: 15px;
+  }
+
+  .nav-links {
+    gap: 13px;
+  }
+
+  .navbar-search {
+    width: 220px;
+    min-width: 220px;
+  }
+
+  .search-suggestions {
+    width: 220px;
+  }
+}
+
+
+/* =========================================
+   RESPONSIVE - 900px
+========================================= */
 
 @media (max-width: 900px) {
 
   .navbar {
-    padding: 15px 25px;
+    flex-wrap: wrap;
+
+    gap: 14px 18px;
+
+    padding: 13px 4%;
+  }
+
+  .navbar-search {
+    order: 3;
+
+    width: 100%;
+    min-width: 0;
+
+    flex: 1 1 100%;
+  }
+
+  .navbar-search input {
+    width: 100%;
+  }
+
+  .search-suggestions {
+    width: 100%;
   }
 
   .nav-links {
     gap: 14px;
-  }
 
-  .nav-links a {
-    font-size: 14px;
+    flex-wrap: wrap;
   }
-
 }
 
-/* =========================
-   MOBILE
-========================= */
 
-@media (max-width: 700px) {
+/* =========================================
+   RESPONSIVE - 600px
+========================================= */
+
+@media (max-width: 600px) {
 
   .navbar {
-    flex-wrap: wrap;
-    padding: 15px 20px;
-    gap: 15px;
+    gap: 12px;
   }
 
   .logo {
@@ -106,50 +549,124 @@
   }
 
   .nav-links {
+    order: 4;
+
     width: 100%;
+
     justify-content: center;
+
     flex-wrap: wrap;
-    gap: 12px 18px;
+
+    gap: 10px 18px;
   }
 
   .nav-links a {
-    font-size: 14px;
-  }
-
-  .login-btn {
-    padding: 8px 13px;
     font-size: 13px;
   }
 
-}
+  .navbar-actions {
+    margin-left: auto;
 
-/* =========================
-   SMALL MOBILE
-========================= */
-
-@media (max-width: 480px) {
-
-  .navbar {
-    justify-content: center;
-    padding: 14px 12px;
+    gap: 14px;
   }
 
-  .logo {
-    width: 100%;
-    text-align: center;
-    font-size: 24px;
+  .icon-label {
+    font-size: 13px;
+  }
+
+  .login-btn {
+    padding: 8px 10px;
+
+    font-size: 12px;
+  }
+}
+
+
+/* =========================================
+   VERY SMALL SCREENS
+========================================= */
+
+@media (max-width: 400px) {
+
+  .navbar {
+    padding: 12px 3%;
   }
 
   .nav-links {
-    gap: 10px 14px;
+    gap: 8px 12px;
   }
 
   .nav-links a {
-    font-size: 13px;
+    font-size: 12px;
   }
 
-  .login-btn {
-    padding: 9px 14px;
+  .navbar-search {
+    height: 36px;
   }
 
+  .search-input-wrapper {
+    height: 36px;
+  }
+
+  .navbar-search input {
+    height: 36px;
+
+    padding-left: 12px;
+    padding-right: 42px;
+  }
+
+  .search-button {
+    top: 3px;
+    right: 4px;
+
+    width: 30px;
+    height: 30px;
+  }
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.logo-badge {
+  width: 45px;
+  height: 45px;
+  flex-shrink: 0;
+  border-radius: 80%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.logo-icon {
+  width: 105%;
+  height: 105%;
+  object-fit: contain;
+  display: block;
+}
+
+.logo-text-wrap {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.logo-text {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+.logo-tagline {
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 600;
+  color: #f0b429;
+  letter-spacing: 0.3px;
 }

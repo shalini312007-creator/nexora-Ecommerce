@@ -1,65 +1,120 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ToysKids.css";
 
 function ToysKids() {
-  const [message, setMessage] = useState("");
-  const toys = [
-    { name:"Teddy Bear", price:"₹799", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsXgRLxKTyvZITWWiSQlawIUb5QE26BPIxBrw9fMQ9fSE29qJVjZiTNRQ&s=10"},
-    { name:"Toy Car", price:"₹499", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGdOuLvl4RzUbbhqbBqEgiFEWqQiEciRtpYKz-wHbl7A&s=10" },
-    { name:"Building Blocks", price:"₹999", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgOWwHG1ArRkyt6xJ6YCtaCxRDsK-GANayFLVIvqK2iQ&s=10" },
-    { name:"Doll Set", price:"₹899", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXuo4X4ld-2QtH33mX8x_uDcjlMGV2fZq54EjGBXtwnyoYtxkzJ75Fmday&s=10" }
-  ];
-  const addToCart = (product) => {
+  const navigate = useNavigate();
 
+  const [message, setMessage] = useState("");
+  const [toys, setToys] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        const toyProducts = data.filter(
+          (product) => product.category === "Toys & Kids"
+        );
+
+        setToys(toyProducts);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Toys & Kids error:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const addToCart = (product) => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-  
+
     const existing = cart.find(
-      item => item.name === product.name
+      (item) => item._id === product._id
     );
-  
-    if(existing){
+
+    if (existing) {
       existing.quantity += 1;
-    }else{
+    } else {
       cart.push({
         ...product,
-        quantity:1
+        price: `₹${product.price}`,
+        quantity: 1
       });
     }
-  
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(cart)
-    );
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
     setMessage(product.name + " added to cart!");
 
-setTimeout(() => {
-  setMessage("");
-}, 2000);
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
   };
+
   return (
     <div className="toys-page">
+
       {message && (
         <div className="toast">
-          {message}
+          ✓ {message}
         </div>
       )}
-  
+
       <div className="toys-banner">
         <h1>Toys & Kids</h1>
+        <p>Fun, Learning and Happiness for Kids</p>
       </div>
 
       <div className="toys-grid">
-        {toys.map((item,index)=>(
-          <div className="toys-card" key={index}>
-            <img src={item.image} alt={item.name}/>
-            <h3>{item.name}</h3>
-            <p>{item.price}</p>
-            <button onClick={() => addToCart(item)}>
-  Add to Cart
-</button>
-          </div>
-        ))}
+
+        {loading && (
+          <p>Loading toys...</p>
+        )}
+
+        {!loading &&
+          toys.map((item) => (
+            <div
+              className="toys-card"
+              key={item._id}
+              onClick={() =>
+                navigate(`/product/${item._id}`)
+              }
+            >
+
+              <img
+                src={item.image}
+                alt={item.name}
+              />
+
+              <h3>{item.name}</h3>
+
+              <p>₹{item.price}</p>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(item);
+                }}
+              >
+                Add to Cart
+              </button>
+
+            </div>
+          ))}
+
+        {!loading && toys.length === 0 && (
+          <p>No toys and kids products available.</p>
+        )}
+
       </div>
+
     </div>
   );
 }

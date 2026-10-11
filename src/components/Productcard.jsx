@@ -1,31 +1,72 @@
+import { useState } from "react";
 import "./Productcard.css";
 
-function ProductCard() {
+function ProductCard({ product, onAddToCart }) {
+  const [showMessage, setShowMessage] = useState(false);
+
+  const handleAddToCart = () => {
+    const existingCart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    const existingItemIndex = existingCart.findIndex(
+      (item) => item._id === product._id
+    );
+
+    let updatedCart;
+
+    if (existingItemIndex !== -1) {
+      updatedCart = [...existingCart];
+      updatedCart[existingItemIndex].quantity += 1;
+    } else {
+      updatedCart = [
+        ...existingCart,
+        {
+          ...product,
+          price: `₹${product.price}`,
+          quantity: 1
+        }
+      ];
+    }
+
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+
+    if (onAddToCart) {
+      onAddToCart(product);
+    }
+
+    setShowMessage(true);
+
+    setTimeout(() => {
+      setShowMessage(false);
+    }, 2000);
+  };
+
   return (
-    <section className="products">
+    <>
+      <div className="product-card">
 
-      <h2>Featured Products</h2>
+        <img
+          src={product.image}
+          alt={product.name}
+        />
 
-      <div className="product-grid">
+        <h3>{product.name}</h3>
 
-        <div className="product-card">
-          <img
-            src="https://via.placeholder.com/200"
-            alt="product"
-          />
+        <p>₹{product.price}</p>
 
-          <h3>Face Wash</h3>
+        <p>{product.category}</p>
 
-          <p>₹299</p>
-
-          <p>⭐4.5</p>
-
-          <button>Add To Cart</button>
-        </div>
+        <button onClick={handleAddToCart}>
+          Add To Cart
+        </button>
 
       </div>
 
-    </section>
+      {showMessage && (
+        <div className="cart-popup">
+          ✓ {product.name} added to cart!
+        </div>
+      )}
+    </>
   );
 }
 

@@ -1,0 +1,86 @@
+.dairy-page {
+    min-height: 100vh;
+    padding: 30px 6%;
+    background: #f8f9fa;
+  }
+  
+  .dairy-banner {
+    text-align: center;
+    padding: 40px 20px;
+    margin-bottom: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+  }
+  
+  .dairy-banner h1 {
+    margin: 0 0 10px;
+    font-size: 32px;
+  }
+  
+  .dairy-banner p {
+    margin: 0;
+    color: #666;
+  }
+  
+  .dairy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+  }
+  
+  .dairy-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  .dairy-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+  
+  .dairy-card h3 {
+    margin: 15px 0 8px;
+  }
+  
+  .dairy-card p {
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  .dairy-card button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  
+  .toast {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    background: #28a745;
+    color: white;
+    padding: 14px 22px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 9999;
+  }
+  
+  @media (max-width: 768px) {
+    .dairy-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  @media (max-width: 500px) {
+    .dairy-grid {
+      grid-template-columns: 1fr;
+    }
+  }

@@ -1,66 +1,72 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Electronics.css";
 
 function Electronics() {
-  const [message, setMessage] = useState("");
-  const products = [
-    {
-      name: "Laptop",
-      price: "₹55,999",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS2QgzOcNrJS09f_xO1b5wEc94uC4jFXSUi9NwF3mGGWg&s=10"
-    },
-    {
-      name: "Smart TV",
-      price: "₹39,999",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTi9CHcaouZgh58u5Yr_9I95A6vDQ5aTxZ-oCBISP8B_A&s=10"
-    },
-    {
-      name: "Bluetooth Speaker",
-      price: "₹2,499",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvD9jlvU3rGhus-hZAOyjflbV3Q-_wafAZ4332BCYyug&s=10"
-    },
-    {
-      name: "Smart Watch",
-      price: "₹4,999",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3QPxUQE1rJEucfaixl_fkE1K03M8-IzXNfPkE6pgtRw&s"
-    }
-  ];
-  const addToCart = (product) => {
+  const navigate = useNavigate();
 
+  const [message, setMessage] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        const electronicsProducts = data.filter(
+          (product) => product.category === "Electronics"
+        );
+
+        setProducts(electronicsProducts);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Electronics error:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const addToCart = (product) => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-  
+
     const existing = cart.find(
-      item => item.name === product.name
+      (item) => item._id === product._id
     );
-  
-    if(existing){
+
+    if (existing) {
       existing.quantity += 1;
-    }else{
+    } else {
       cart.push({
         ...product,
-        quantity:1
+        price: `₹${product.price}`,
+        quantity: 1
       });
     }
-  
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(cart)
-    );
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
     setMessage(product.name + " added to cart!");
 
-setTimeout(() => {
-  setMessage("");
-}, 2000);
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
   };
+
   return (
     <div className="electronics-page">
-  
+
       {message && (
         <div className="toast">
-          {message}
+          ✓ {message}
         </div>
       )}
-  
+
       <div className="electronics-banner">
         <h1>Electronics</h1>
         <p>Latest Electronic Devices & Accessories</p>
@@ -68,25 +74,48 @@ setTimeout(() => {
 
       <div className="electronics-grid">
 
-        {products.map((item,index)=>(
-          <div className="electronics-card" key={index}>
+        {loading && (
+          <p>Loading electronics...</p>
+        )}
 
-            <img src={item.image} alt={item.name}/>
+        {!loading &&
+          products.map((item) => (
+            <div
+              className="electronics-card"
+              key={item._id}
+              onClick={() =>
+                navigate(`/product/${item._id}`)
+              }
+            >
 
-            <h3>{item.name}</h3>
+              <img
+                src={item.image}
+                alt={item.name}
+              />
 
-            <p>{item.price}</p>
-            <button onClick={() => addToCart(item)}>
-  Add to Cart
-</button>
+              <h3>{item.name}</h3>
 
-          </div>
-        ))}
+              <p>₹{item.price}</p>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(item);
+                }}
+              >
+                Add to Cart
+              </button>
+
+            </div>
+          ))}
+
+        {!loading && products.length === 0 && (
+          <p>No electronics available.</p>
+        )}
 
       </div>
-
     </div>
   );
 }
 
-export default Electronics
+export default Electronics;

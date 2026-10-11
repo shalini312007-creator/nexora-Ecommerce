@@ -19,7 +19,7 @@ function Register() {
     });
   };
 
-  const registerUser = () => {
+  const registerUser = async () => {
 
     if (
       !user.name ||
@@ -30,14 +30,38 @@ function Register() {
       return;
     }
 
-    localStorage.setItem(
-      "user",
-      JSON.stringify(user)
-    );
+    try {
 
-    alert("Registration Successful!");
+      const response = await fetch(
+        "http://localhost:5000/api/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(user)
+        }
+      );
 
-    navigate("/login");
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message);
+        return;
+      }
+
+      alert("Registration Successful!");
+
+      navigate("/login");
+
+    } catch (error) {
+
+      console.error("Registration error:", error);
+
+      alert(
+        "Unable to connect to server. Please make sure the backend is running."
+      );
+    }
   };
 
   return (
@@ -74,7 +98,7 @@ function Register() {
         Register
       </button>
 
-      <p style={{marginTop:"20px"}}>
+      <p style={{ marginTop: "20px" }}>
         Already have an account?
         <Link to="/login"> Login</Link>
       </p>

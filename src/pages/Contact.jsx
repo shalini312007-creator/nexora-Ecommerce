@@ -1,15 +1,26 @@
+
 import { useState } from "react";
 import emailjs from "@emailjs/browser";
 import "./contact.css";
 
 function Contact() {
-
   const [form, setForm] = useState({
     name: "",
     email: "",
     subject: "",
     message: ""
   });
+
+  const [isSending, setIsSending] = useState(false);
+
+  const showToast = (message, type = "success") => {
+    sessionStorage.setItem(
+      "nexoraToast",
+      JSON.stringify({ message, type })
+    );
+
+    window.dispatchEvent(new Event("nexora-toast"));
+  };
 
   const handleChange = (e) => {
     setForm({
@@ -18,33 +29,35 @@ function Contact() {
     });
   };
 
-  const sendMessage = (e) => {
+  const sendMessage = async (e) => {
     e.preventDefault();
 
+    if (isSending) return;
+
     if (
-      !form.name ||
-      !form.email ||
-      !form.subject ||
-      !form.message
+      !form.name.trim() ||
+      !form.email.trim() ||
+      !form.subject.trim() ||
+      !form.message.trim()
     ) {
-      alert("Please fill all the fields.");
+      showToast("Please fill in all the fields.", "error");
       return;
     }
 
-    emailjs.send(
-      "service_7cp9b49",
-      "template_3s99c0i",
-      {
-        name: form.name,
-        email: form.email,
-        subject: form.subject,
-        message: form.message
-      },
-      "FjfopWTtheTG-NIEi"
-    )
-    .then(() => {
+    setIsSending(true);
 
-      alert("Message sent successfully!");
+    try {
+      await emailjs.send(
+        "service_7cp9b49",
+        "template_3s99c0i",
+        {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          subject: form.subject.trim(),
+          message: form.message.trim()
+        },
+        "FjfopWTtheTG-NIEi"
+      );
 
       setForm({
         name: "",
@@ -53,14 +66,20 @@ function Contact() {
         message: ""
       });
 
-    })
-    .catch((error) => {
+      showToast(
+        "Message sent successfully!",
+        "success"
+      );
+    } catch (error) {
+      console.error("EmailJS error:", error);
 
-      console.log(error);
-
-      alert("Failed to send message.");
-
-    });
+      showToast(
+        "Failed to send your message. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -99,7 +118,6 @@ function Contact() {
       <div className="contact-container">
 
         <div className="contact-form">
-
           <h2>Send Us a Message</h2>
 
           <form onSubmit={sendMessage}>
@@ -110,6 +128,8 @@ function Contact() {
               placeholder="Your Name"
               value={form.name}
               onChange={handleChange}
+              required
+              disabled={isSending}
             />
 
             <input
@@ -118,6 +138,8 @@ function Contact() {
               placeholder="Your Email"
               value={form.email}
               onChange={handleChange}
+              required
+              disabled={isSending}
             />
 
             <input
@@ -126,6 +148,8 @@ function Contact() {
               placeholder="Subject"
               value={form.subject}
               onChange={handleChange}
+              required
+              disabled={isSending}
             />
 
             <textarea
@@ -134,14 +158,15 @@ function Contact() {
               placeholder="Your Message"
               value={form.message}
               onChange={handleChange}
-            ></textarea>
+              required
+              disabled={isSending}
+            />
 
-            <button type="submit">
-              Send Message
+            <button type="submit" disabled={isSending}>
+              {isSending ? "Sending..." : "Send Message"}
             </button>
 
           </form>
-
         </div>
 
         <div className="contact-info">

@@ -53,3 +53,48 @@
 .logout-btn:hover{
     background:#dc2626;
 }
+.orders-btn {
+    width: 200px;
+    padding: 12px 20px;
+    margin: 15px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  /* =========================
+   PROFILE TOAST
+========================= */
+
+.profile-toast {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    z-index: 9999;
+  
+    background: #28a745;
+    color: white;
+  
+    padding: 14px 22px;
+    border-radius: 8px;
+  
+    font-size: 14px;
+    font-weight: 600;
+  
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  
+    animation: profileToastSlide 0.3s ease;
+  }
+  
+  @keyframes profileToastSlide {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+  
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }

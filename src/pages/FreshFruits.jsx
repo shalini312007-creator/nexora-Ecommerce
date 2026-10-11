@@ -1,48 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./FreshFruits.css";
 
 function FreshFruits() {
+  const navigate = useNavigate();
+
+  const [fruits, setFruits] = useState([]);
   const [message, setMessage] = useState("");
-  const fruits = [
-    {
-      name: "Fresh Apples",
-      price: "₹180 / kg",
-      image: "https://cdn.pixabay.com/photo/2017/09/26/13/31/apple-2788616_640.jpg"
-    },
-    {
-      name: "Bananas",
-      price: "₹60 / dozen",
-      image: "https://st3.depositphotos.com/1642482/18878/i/450/depositphotos_188783356-stock-photo-bunch-of-bananas-isolated.jpg"
-    },
-    {
-      name: "Mangoes",
-      price: "₹250 / kg",
-      image: "https://www.melissas.com/cdn/shop/files/4-pounds-image-of-honey-mangos-fruit-1125637415_512x512.jpg?v=1738768090"
-    },
-    {
-      name: "Oranges",
-      price: "₹120 / kg",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSRjhRN5VpE0WVB4GFANN07chx0PTwG-aD3ZQ0vZJsryg&s=10"
-    },
-    {
-      name: "Watermelon",
-      price: "₹50 / kg",
-      image: "https://media.post.rvohealth.io/wp-content/uploads/2020/09/AN335-Watermelon-732x549-Thumb.jpg"
-    },
-    {
-      name: "Strawberries",
-      price: "₹220 / box",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEsN2tmZUmZ3Pydc3Gn4v16cgjkaWLDzwhPgBKkfjD_w&s=10"
-    }
-  ];
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((response) => response.json())
+      .then((data) => {
+        const fruitProducts = data.filter(
+          (product) => product.category === "Fruits"
+        );
+
+        setFruits(fruitProducts);
+      })
+      .catch((error) => {
+        console.error("Error loading fruits:", error);
+      });
+  }, []);
 
   const addToCart = (product) => {
-
     let cart =
       JSON.parse(localStorage.getItem("cart")) || [];
 
     const existing = cart.find(
-      item => item.name === product.name
+      (item) => item._id === product._id
     );
 
     if (existing) {
@@ -50,6 +36,7 @@ function FreshFruits() {
     } else {
       cart.push({
         ...product,
+        price: `₹${product.price}`,
         quantity: 1
       });
     }
@@ -58,23 +45,22 @@ function FreshFruits() {
       "cart",
       JSON.stringify(cart)
     );
+
     setMessage(product.name + " added to cart!");
 
-setTimeout(() => {
-  setMessage("");
-}, 2000);
-
-    alert(product.name + " added to cart!");
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
   };
 
   return (
     <div className="fruits-page">
+
       {message && (
         <div className="toast">
-          {message}
+          ✓ {message}
         </div>
       )}
-  
 
       <div className="fruits-banner">
         <h1>Fresh Fruits</h1>
@@ -85,8 +71,14 @@ setTimeout(() => {
 
       <div className="fruits-grid">
 
-        {fruits.map((item, index) => (
-          <div className="fruit-card" key={index}>
+        {fruits.map((item) => (
+          <div
+            className="fruit-card"
+            key={item._id}
+            onClick={() =>
+              navigate(`/product/${item._id}`)
+            }
+          >
 
             <img
               src={item.image}
@@ -95,10 +87,13 @@ setTimeout(() => {
 
             <h3>{item.name}</h3>
 
-            <p>{item.price}</p>
+            <p>₹{item.price}</p>
 
             <button
-              onClick={() => addToCart(item)}
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(item);
+              }}
             >
               Add to Cart
             </button>

@@ -1,59 +1,71 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./SnacksBeverages.css";
 
 function SnacksBeverages() {
-  const [message, setMessage] = useState("");
-  const items = [
-    { name:"Cookies", price:"₹99", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQAnxK7DKDjAjFmJR3M6NyH5CNhZkQipHKfqT9fJa-rHRzOYQfPxRMP52Ft&s=10" },
-    { name:"Potato Chips", price:"₹50", image:"https://m.media-amazon.com/images/I/514xVUdk6ML._AC_UF894,1000_QL80_.jpg" },
-    { name:"Cold Drink", price:"₹40", image:"https://static.wixstatic.com/media/8f1abd_80bf432a005041b59c2a7fa1960ce71e~mv2.jpeg/v1/fill/w_744,h_400,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/8f1abd_80bf432a005041b59c2a7fa1960ce71e~mv2.jpeg" },
-    { name:"Fruit Juice", price:"₹120", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTTuDDatcm9EunRWTU2xS9CN0IJIokHfpndLYGYnEOG7Q&s=10" },
-    {
-      name: "Popcorn",
-      price: "₹70",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQOrLeId_gBREzZIkNesj-gPIMeQKMcH4LR2QrTnJlqUg&s=10"
-    },
-    {
-      name: "Green Tea",
-      price: "₹199",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSRFg-0PN3MjuLD8p4RJK5GiCszI9GjCb7Y91L_uCubCC7dNSmxGOmb-aLH&s=10"
-    }
-  ];
-  const addToCart = (product) => {
+  const navigate = useNavigate();
 
+  const [message, setMessage] = useState("");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/products")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        const snacksProducts = data.filter(
+          (product) => product.category === "Snacks"
+        );
+
+        setItems(snacksProducts);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Snacks error:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const addToCart = (product) => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-  
+
     const existing = cart.find(
-      item => item.name === product.name
+      (item) => item._id === product._id
     );
-  
-    if(existing){
+
+    if (existing) {
       existing.quantity += 1;
-    }else{
+    } else {
       cart.push({
         ...product,
-        quantity:1
+        price: `₹${product.price}`,
+        quantity: 1
       });
     }
-  
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(cart)
-    );
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+
     setMessage(product.name + " added to cart!");
 
-setTimeout(() => {
-  setMessage("");
-}, 2000);
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
   };
+
   return (
     <div className="snacks-page">
+
       {message && (
         <div className="toast">
-          {message}
+          ✓ {message}
         </div>
       )}
-  
 
       <div className="snacks-banner">
         <h1>Snacks & Beverages</h1>
@@ -62,19 +74,46 @@ setTimeout(() => {
 
       <div className="snacks-grid">
 
-        {items.map((item,index)=>(
-          <div className="snack-card" key={index}>
-            <img src={item.image} alt={item.name}/>
-            <h3>{item.name}</h3>
-            <p>{item.price}</p>
-            <button onClick={() => addToCart(item)}>
-  Add to Cart
-</button>
-          </div>
-        ))}
+        {loading && (
+          <p>Loading snacks and beverages...</p>
+        )}
+
+        {!loading &&
+          items.map((item) => (
+            <div
+              className="snack-card"
+              key={item._id}
+              onClick={() =>
+                navigate(`/product/${item._id}`)
+              }
+            >
+
+              <img
+                src={item.image}
+                alt={item.name}
+              />
+
+              <h3>{item.name}</h3>
+
+              <p>₹{item.price}</p>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToCart(item);
+                }}
+              >
+                Add to Cart
+              </button>
+
+            </div>
+          ))}
+
+        {!loading && items.length === 0 && (
+          <p>No snacks and beverages available.</p>
+        )}
 
       </div>
-
     </div>
   );
 }
