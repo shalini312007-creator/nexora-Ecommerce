@@ -1,6 +1,7 @@
 import "./Register.css";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { API_BASE_URL } from "../api/productApi"; // adjust path to where productApi.js lives
 
 function Register() {
 
@@ -33,7 +34,7 @@ function Register() {
     try {
 
       const response = await fetch(
-        "http://localhost:5000/api/register",
+        `${API_BASE_URL}/api/register`,
         {
           method: "POST",
           headers: {

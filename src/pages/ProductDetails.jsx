@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { API_BASE_URL, getProducts } from "../api/productApi"; // adjust path to where productApi.js lives
 import "./ProductDetails.css";
 
 function ProductDetails() {
@@ -14,18 +15,11 @@ function ProductDetails() {
   useEffect(() => {
     window.scrollTo(0, 0);
 
-    fetch("http://localhost:5000/api/products")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
-        }
-
-        return response.json();
-      })
+    getProducts()
       .then((data) => {
-        const foundProduct = data.find(
-          (item) => String(item._id) === String(id)
-        );
+        const foundProduct = Array.isArray(data)
+          ? data.find((item) => String(item._id) === String(id))
+          : null;
 
         setProduct(foundProduct || null);
 
@@ -35,7 +29,7 @@ function ProductDetails() {
 
           // If logged in, check MongoDB wishlist
           if (token) {
-            fetch("http://localhost:5000/api/wishlist", {
+            fetch(`${API_BASE_URL}/api/wishlist`, {
               headers: {
                 Authorization: `Bearer ${token}`
               }
@@ -128,6 +122,8 @@ function ProductDetails() {
 
     localStorage.setItem("cart", JSON.stringify(updatedCart));
 
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
+
     setMessage(`${product.name} added to cart!`);
 
     setTimeout(() => {
@@ -162,7 +158,7 @@ function ProductDetails() {
         // REMOVE FROM MONGODB
         if (isWishlisted) {
           const response = await fetch(
-            `http://localhost:5000/api/wishlist/${product._id}`,
+            `${API_BASE_URL}/api/wishlist/${product._id}`,
             {
               method: "DELETE",
               headers: {
@@ -200,7 +196,7 @@ function ProductDetails() {
         // ADD TO MONGODB
         else {
           const response = await fetch(
-            "http://localhost:5000/api/wishlist",
+            `${API_BASE_URL}/api/wishlist`,
             {
               method: "POST",
               headers: {

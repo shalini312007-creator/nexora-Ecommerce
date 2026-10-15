@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getProducts } from "../api/productApi";// adjust path to where productApi.js lives
 import "./PetSupplies.css";
 
 function PetSupplies() {
@@ -10,18 +11,11 @@ function PetSupplies() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/products")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
-        }
-
-        return response.json();
-      })
+    getProducts()
       .then((data) => {
-        const petProducts = data.filter(
-          (product) => product.category === "Pet Supplies"
-        );
+        const petProducts = Array.isArray(data)
+          ? data.filter((product) => product.category === "Pet Supplies")
+          : [];
 
         setPets(petProducts);
         setLoading(false);
@@ -33,25 +27,37 @@ function PetSupplies() {
   }, []);
 
   const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    let cart = [];
+
+    try {
+      const storedCart = JSON.parse(
+        localStorage.getItem("cart") || "[]"
+      );
+
+      cart = Array.isArray(storedCart) ? storedCart : [];
+    } catch (error) {
+      console.error("Error reading cart:", error);
+    }
 
     const existing = cart.find(
       (item) => item._id === product._id
     );
 
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity = (Number(existing.quantity) || 1) + 1;
     } else {
       cart.push({
         ...product,
         price: `₹${product.price}`,
-        quantity: 1
+        quantity: 1,
       });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
 
-    setMessage(product.name + " added to cart!");
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
+
+    setMessage(`${product.name} added to cart!`);
 
     setTimeout(() => {
       setMessage("");
@@ -60,12 +66,7 @@ function PetSupplies() {
 
   return (
     <div className="pets-page">
-
-      {message && (
-        <div className="toast">
-          ✓ {message}
-        </div>
-      )}
+      {message && <div className="toast">✓ {message}</div>}
 
       <div className="pets-banner">
         <h1>Pet Supplies</h1>
@@ -73,25 +74,16 @@ function PetSupplies() {
       </div>
 
       <div className="pets-grid">
-
-        {loading && (
-          <p>Loading pet supplies...</p>
-        )}
+        {loading && <p>Loading pet supplies...</p>}
 
         {!loading &&
           pets.map((item) => (
             <div
               className="pets-card"
               key={item._id}
-              onClick={() =>
-                navigate(`/product/${item._id}`)
-              }
+              onClick={() => navigate(`/product/${item._id}`)}
             >
-
-              <img
-                src={item.image}
-                alt={item.name}
-              />
+              <img src={item.image} alt={item.name} />
 
               <h3>{item.name}</h3>
 
@@ -105,16 +97,13 @@ function PetSupplies() {
               >
                 Add to Cart
               </button>
-
             </div>
           ))}
 
         {!loading && pets.length === 0 && (
           <p>No pet supplies available.</p>
         )}
-
       </div>
-
     </div>
   );
 }

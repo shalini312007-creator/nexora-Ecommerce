@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getProducts } from "../api/productApi";
 import "./BooksEducation.css";
 
 function BooksEducation() {
@@ -10,37 +11,45 @@ function BooksEducation() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/products")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
-        }
-
-        return response.json();
-      })
+    getProducts()
       .then((data) => {
-        const bookProducts = data.filter(
-          (product) => product.category === "Books & Education"
-        );
+        const bookProducts = Array.isArray(data)
+          ? data.filter(
+              (product) =>
+                product.category === "Books & Education"
+            )
+          : [];
 
         setBooks(bookProducts);
-        setLoading(false);
       })
       .catch((error) => {
         console.error("Books error:", error);
+        setBooks([]);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, []);
 
   const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    let cart = [];
+
+    try {
+      const storedCart = JSON.parse(
+        localStorage.getItem("cart") || "[]"
+      );
+
+      cart = Array.isArray(storedCart) ? storedCart : [];
+    } catch {
+      cart = [];
+    }
 
     const existing = cart.find(
       (item) => item._id === product._id
     );
 
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity = (Number(existing.quantity) || 1) + 1;
     } else {
       cart.push({
         ...product,
@@ -51,6 +60,8 @@ function BooksEducation() {
 
     localStorage.setItem("cart", JSON.stringify(cart));
 
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
+
     setMessage(product.name + " added to cart!");
 
     setTimeout(() => {
@@ -60,7 +71,6 @@ function BooksEducation() {
 
   return (
     <div className="books-page">
-
       {message && (
         <div className="toast">
           ✓ {message}
@@ -73,7 +83,6 @@ function BooksEducation() {
       </div>
 
       <div className="books-grid">
-
         {loading && (
           <p>Loading books and education products...</p>
         )}
@@ -87,11 +96,7 @@ function BooksEducation() {
                 navigate(`/product/${item._id}`)
               }
             >
-
-              <img
-                src={item.image}
-                alt={item.name}
-              />
+              <img src={item.image} alt={item.name} />
 
               <h3>{item.name}</h3>
 
@@ -105,16 +110,13 @@ function BooksEducation() {
               >
                 Add to Cart
               </button>
-
             </div>
           ))}
 
         {!loading && books.length === 0 && (
           <p>No books and education products available.</p>
         )}
-
       </div>
-
     </div>
   );
 }

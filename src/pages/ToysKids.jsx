@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getProducts } from "../api/productApi"; // adjust path to where productApi.js lives
 import "./ToysKids.css";
 
 function ToysKids() {
@@ -10,18 +11,11 @@ function ToysKids() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/products")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
-        }
-
-        return response.json();
-      })
+    getProducts()
       .then((data) => {
-        const toyProducts = data.filter(
-          (product) => product.category === "Toys & Kids"
-        );
+        const toyProducts = Array.isArray(data)
+          ? data.filter((product) => product.category === "Toys & Kids")
+          : [];
 
         setToys(toyProducts);
         setLoading(false);
@@ -33,25 +27,37 @@ function ToysKids() {
   }, []);
 
   const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    let cart = [];
+
+    try {
+      const storedCart = JSON.parse(
+        localStorage.getItem("cart") || "[]"
+      );
+
+      cart = Array.isArray(storedCart) ? storedCart : [];
+    } catch (error) {
+      console.error("Error reading cart:", error);
+    }
 
     const existing = cart.find(
       (item) => item._id === product._id
     );
 
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity = (Number(existing.quantity) || 1) + 1;
     } else {
       cart.push({
         ...product,
         price: `₹${product.price}`,
-        quantity: 1
+        quantity: 1,
       });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
 
-    setMessage(product.name + " added to cart!");
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
+
+    setMessage(`${product.name} added to cart!`);
 
     setTimeout(() => {
       setMessage("");
@@ -60,12 +66,7 @@ function ToysKids() {
 
   return (
     <div className="toys-page">
-
-      {message && (
-        <div className="toast">
-          ✓ {message}
-        </div>
-      )}
+      {message && <div className="toast">✓ {message}</div>}
 
       <div className="toys-banner">
         <h1>Toys & Kids</h1>
@@ -73,25 +74,16 @@ function ToysKids() {
       </div>
 
       <div className="toys-grid">
-
-        {loading && (
-          <p>Loading toys...</p>
-        )}
+        {loading && <p>Loading toys...</p>}
 
         {!loading &&
           toys.map((item) => (
             <div
               className="toys-card"
               key={item._id}
-              onClick={() =>
-                navigate(`/product/${item._id}`)
-              }
+              onClick={() => navigate(`/product/${item._id}`)}
             >
-
-              <img
-                src={item.image}
-                alt={item.name}
-              />
+              <img src={item.image} alt={item.name} />
 
               <h3>{item.name}</h3>
 
@@ -105,16 +97,13 @@ function ToysKids() {
               >
                 Add to Cart
               </button>
-
             </div>
           ))}
 
         {!loading && toys.length === 0 && (
           <p>No toys and kids products available.</p>
         )}
-
       </div>
-
     </div>
   );
 }

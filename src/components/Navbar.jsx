@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Heart, Search, ShoppingCart } from "lucide-react";
 import logoIcon from "../assets/nexora-icon.png";
 import "./Navbar.css";
+import { getProducts } from "../api/productApi";
 
 function getStoredArray(key) {
   try {
@@ -59,25 +60,18 @@ function Navbar() {
   }, []);
 
   /* =========================
-     FETCH PRODUCTS
-  ========================= */
+   FETCH PRODUCTS
+========================= */
 
-  useEffect(() => {
-    fetch("http://localhost:5000/api/products")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
-        }
-
-        return response.json();
-      })
-      .then((data) => {
-        setProducts(Array.isArray(data) ? data : []);
-      })
-      .catch((error) => {
-        console.error("Navbar search error:", error);
-      });
-  }, []);
+useEffect(() => {
+  getProducts()
+    .then((data) => {
+      setProducts(Array.isArray(data) ? data : []);
+    })
+    .catch((error) => {
+      console.error("Navbar search error:", error);
+    });
+}, []);
 
   /* =========================
      SEARCH SUGGESTIONS

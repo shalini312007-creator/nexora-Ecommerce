@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./FashionDresses.css";
 
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 function FashionDresses() {
   const navigate = useNavigate();
 
@@ -10,7 +13,7 @@ function FashionDresses() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/products")
+    fetch(`${API_BASE_URL}/api/products`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to fetch products");
@@ -19,9 +22,9 @@ function FashionDresses() {
         return response.json();
       })
       .then((data) => {
-        const fashionProducts = data.filter(
-          (product) => product.category === "Fashion"
-        );
+        const fashionProducts = Array.isArray(data)
+          ? data.filter((product) => product.category === "Fashion")
+          : [];
 
         setProducts(fashionProducts);
         setLoading(false);
@@ -33,25 +36,37 @@ function FashionDresses() {
   }, []);
 
   const addToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    let cart = [];
+
+    try {
+      const storedCart = JSON.parse(
+        localStorage.getItem("cart") || "[]"
+      );
+
+      cart = Array.isArray(storedCart) ? storedCart : [];
+    } catch (error) {
+      console.error("Error reading cart:", error);
+    }
 
     const existing = cart.find(
       (item) => item._id === product._id
     );
 
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity = (Number(existing.quantity) || 1) + 1;
     } else {
       cart.push({
         ...product,
         price: `₹${product.price}`,
-        quantity: 1
+        quantity: 1,
       });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
 
-    setMessage(product.name + " added to cart!");
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
+
+    setMessage(`${product.name} added to cart!`);
 
     setTimeout(() => {
       setMessage("");
@@ -60,46 +75,28 @@ function FashionDresses() {
 
   return (
     <div className="fashion-page">
-
-      {message && (
-        <div className="toast">
-          ✓ {message}
-        </div>
-      )}
+      {message && <div className="toast">✓ {message}</div>}
 
       <div className="fashion-banner">
         <h1>Fashion & Dresses</h1>
-        <p>
-          Discover the latest trends and styles
-        </p>
+        <p>Discover the latest trends and styles</p>
       </div>
 
       <div className="fashion-products">
-
-        {loading && (
-          <p>Loading fashion products...</p>
-        )}
+        {loading && <p>Loading fashion products...</p>}
 
         {!loading &&
           products.map((item) => (
             <div
               className="fashion-card"
               key={item._id}
-              onClick={() =>
-                navigate(`/product/${item._id}`)
-              }
+              onClick={() => navigate(`/product/${item._id}`)}
             >
-
-              <img
-                src={item.image}
-                alt={item.name}
-              />
+              <img src={item.image} alt={item.name} />
 
               <h3>{item.name}</h3>
 
-              <p className="price">
-                ₹{item.price}
-              </p>
+              <p className="price">₹{item.price}</p>
 
               <button
                 onClick={(e) => {
@@ -109,14 +106,12 @@ function FashionDresses() {
               >
                 Add to Cart
               </button>
-
             </div>
           ))}
 
         {!loading && products.length === 0 && (
           <p>No fashion products available.</p>
         )}
-
       </div>
     </div>
   );

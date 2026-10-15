@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../api/productApi"; // adjust path to where productApi.js lives
 import "./Wishlist.css";
 
 function Wishlist() {
@@ -17,7 +18,7 @@ function Wishlist() {
 
     // Logged-in user → MongoDB
     if (token) {
-      fetch("http://localhost:5000/api/wishlist", {
+      fetch(`${API_BASE_URL}/api/wishlist`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -74,7 +75,7 @@ function Wishlist() {
     if (token) {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/wishlist/${productId}`,
+          `${API_BASE_URL}/api/wishlist/${productId}`,
           {
             method: "DELETE",
             headers: {
@@ -164,6 +165,8 @@ function Wishlist() {
       "cart",
       JSON.stringify(cart)
     );
+
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
 
     setMessage(`${product.name} added to cart!`);
 

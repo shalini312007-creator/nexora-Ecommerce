@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
+import { getProducts } from "../api/productApi"; // adjust path to where productApi.js lives
 import "./Search.css";
 
 function Search() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const searchText = searchParams.get("q") || "";
@@ -13,16 +14,11 @@ function Search() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/products")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
-        }
-
-        return response.json();
-      })
+    getProducts()
       .then((data) => {
-        const searchResults = data.filter((product) => {
+        const allProducts = Array.isArray(data) ? data : [];
+
+        const searchResults = allProducts.filter((product) => {
           const name = product.name?.toLowerCase() || "";
           const category = product.category?.toLowerCase() || "";
 
@@ -42,8 +38,17 @@ function Search() {
   }, [searchText]);
 
   const addToCart = (product) => {
-    const existingCart =
-      JSON.parse(localStorage.getItem("cart")) || [];
+    let existingCart = [];
+
+    try {
+      const storedCart = JSON.parse(
+        localStorage.getItem("cart") || "[]"
+      );
+
+      existingCart = Array.isArray(storedCart) ? storedCart : [];
+    } catch (error) {
+      console.error("Error reading cart:", error);
+    }
 
     const existingItem = existingCart.find(
       (item) => item._id === product._id
@@ -54,7 +59,7 @@ function Search() {
     if (existingItem) {
       updatedCart = existingCart.map((item) =>
         item._id === product._id
-          ? { ...item, quantity: item.quantity + 1 }
+          ? { ...item, quantity: (Number(item.quantity) || 1) + 1 }
           : item
       );
     } else {
@@ -69,6 +74,8 @@ function Search() {
     }
 
     localStorage.setItem("cart", JSON.stringify(updatedCart));
+
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
   };
 
   return (
@@ -96,12 +103,11 @@ function Search() {
 
         {products.map((product) => (
 
-
-<div
-  className="search-card"
-  key={product._id}
-  onClick={() => navigate(`/product/${product._id}`)}
->
+          <div
+            className="search-card"
+            key={product._id}
+            onClick={() => navigate(`/product/${product._id}`)}
+          >
             <img
               src={product.image}
               alt={product.name}
@@ -118,7 +124,10 @@ function Search() {
             </p>
 
             <button
-              onClick={() => addToCart(product)}
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(product);
+              }}
             >
               Add to Cart
             </button>

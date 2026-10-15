@@ -1,5 +1,5 @@
-
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../api/productApi"; // adjust path to where productApi.js lives
 import "./MyOrders.css";
 
 function MyOrders() {
@@ -28,7 +28,7 @@ function MyOrders() {
         }
 
         const response = await fetch(
-          "http://localhost:5000/api/orders",
+          `${API_BASE_URL}/api/orders`,
           {
             headers: {
               Authorization: `Bearer ${token}`

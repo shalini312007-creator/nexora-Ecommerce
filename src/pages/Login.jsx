@@ -1,6 +1,7 @@
 import "./login.css";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { API_BASE_URL } from "../api/productApi"; // adjust path to where productApi.js lives
 
 function Login() {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/login",
+        `${API_BASE_URL}/api/login`,
         {
           method: "POST",
           headers: {
