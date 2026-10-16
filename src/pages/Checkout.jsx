@@ -1,14 +1,64 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import emailjs from "@emailjs/browser";
 import "./Checkout.css";
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API_BASE_URL = (
+  process.env.REACT_APP_API_URL || "http://localhost:5000"
+).replace(/\/+$/, "");
+
+const EMAIL_SERVICE_ID = "service_7cp9b49";
+const EMAIL_TEMPLATE_ID = "template_dur2sn2";
+const EMAIL_PUBLIC_KEY = "FjfopWTtheTG-NIEi0";
+
+function getProductId(item) {
+  return String(
+    item?._id ||
+      item?.productId?._id ||
+      item?.productId ||
+      item?.product?._id ||
+      item?.id ||
+      ""
+  );
+}
+
+function getProductPrice(item) {
+  const candidates = [
+    item?.price,
+    item?.product?.price,
+    item?.productId?.price,
+    item?.unitPrice,
+    item?.sellingPrice,
+    item?.salePrice,
+  ];
+
+  for (const value of candidates) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      Number.isFinite(Number(value)) &&
+      Number(value) >= 0
+    ) {
+      return Number(value);
+    }
+  }
+
+  return null;
+}
+
+function getQuantity(item) {
+  const quantity = Number(item?.quantity);
+  return Number.isInteger(quantity) && quantity > 0 ? quantity : 1;
+}
 
 function Checkout() {
   const navigate = useNavigate();
 
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState("");
   const [details, setDetails] = useState({
     name: "",
     email: "",
@@ -18,111 +68,290 @@ function Checkout() {
     state: "",
     pincode: "",
     payment: "Cash on Delivery",
-    delivery: "Standard Delivery"
+    delivery: "Standard Delivery",
   });
 
-  const [message, setMessage] = useState("");
-  const [cartItems, setCartItems] = useState([]);
-
-  // Load cart for order summary
   useEffect(() => {
-    try {
-      const storedCart = JSON.parse(
-        localStorage.getItem("cart") || "[]"
-      );
-      setCartItems(Array.isArray(storedCart) ? storedCart : []);
-    } catch {
-      setCartItems([]);
+    let active = true;
+
+    async function loadCartAndProducts() {
+      let savedCart = [];
+
+      try {
+        const parsed = JSON.parse(localStorage.getItem("cart") || "[]");
+        savedCart = Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        console.error("Unable to read cart:", error);
+      }
+
+      try {
+        const user = JSON.parse(
+          localStorage.getItem("currentUser") || "null"
+        );
+
+        if (active && user) {
+          setDetails((previous) => ({
+            ...previous,
+            name: user.name || "",
+            email: user.email || "",
+          }));
+        }
+      } catch (error) {
+        console.error("Unable to read user details:", error);
+      }
+
+      // Fetch current product data so missing cart prices can be recovered.
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/products`);
+
+        if (response.ok) {
+          const data = await response.json();
+          const products = Array.isArray(data)
+            ? data
+            : Array.isArray(data.products)
+            ? data.products
+            : [];
+
+          const productMap = new Map(
+            products.map((product) => [
+              String(product._id || product.id || ""),
+              product,
+            ])
+          );
+
+          savedCart = savedCart.map((item) => {
+            const product = productMap.get(getProductId(item));
+
+            if (!product) return item;
+
+            return {
+              ...product,
+              ...item,
+              _id: product._id || item._id,
+              name: item.name || product.name,
+              image: item.image || product.image,
+              price:
+                getProductPrice(item) !== null
+                  ? getProductPrice(item)
+                  : getProductPrice(product),
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Unable to refresh product prices:", error);
+      }
+
+      if (active) {
+        setCart(savedCart);
+      }
     }
 
-    window.scrollTo(0, 0);
+    loadCartAndProducts();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const handleChange = (e) => {
-    setDetails({
-      ...details,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const showPopup = (text) => {
-    setMessage(text);
-
-    setTimeout(() => {
-      setMessage("");
-    }, 2500);
-  };
-
-  // Calculate product subtotal
-  const productSubtotal = cartItems.reduce((total, item) => {
-    const price =
-      typeof item.price === "number"
-        ? item.price
-        : parseInt(String(item.price).replace(/[^\d]/g, ""), 10) || 0;
-
-    return total + price * (Number(item.quantity) || 1);
+  const productSubtotal = cart.reduce((total, item) => {
+    const price = getProductPrice(item);
+    return total + (price === null ? 0 : price * getQuantity(item));
   }, 0);
+
+  const hasMissingPrices = cart.some(
+    (item) => getProductPrice(item) === null
+  );
 
   const deliveryCharge =
     details.delivery === "Express Delivery" ? 50 : 0;
 
-  const finalTotal = productSubtotal + deliveryCharge;
+  const totalAmount = productSubtotal + deliveryCharge;
 
-  // Save order in MongoDB
-  const saveOrder = async (
-    orderItems,
-    totalAmount,
-    currentUser,
-    paymentDetails = {}
-  ) => {
-    const response = await fetch(`${API_BASE_URL}/api/orders`, {
-      method: "POST",
+  function showPopup(message) {
+    setToast(message);
+    setTimeout(() => setToast(""), 4000);
+  }
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setDetails((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  }
+
+  function getAuthToken() {
+    return (
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("token") ||
+      ""
+    );
+  }
+
+  function getCurrentUser() {
+    try {
+      return JSON.parse(localStorage.getItem("currentUser") || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function getOrderItems() {
+    return cart.map((item) => ({
+      productId: getProductId(item),
+      quantity: getQuantity(item),
+    }));
+  }
+
+  function validateCheckout() {
+    const requiredFields = [
+      ["name", "Please enter your full name."],
+      ["email", "Please enter your email address."],
+      ["phone", "Please enter your phone number."],
+      ["address", "Please enter your delivery address."],
+      ["city", "Please enter your city."],
+      ["state", "Please enter your state."],
+      ["pincode", "Please enter your PIN code."],
+    ];
+
+    for (const [field, message] of requiredFields) {
+      if (!String(details[field] || "").trim()) {
+        showPopup(message);
+        return false;
+      }
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim())) {
+      showPopup("Please enter a valid email address.");
+      return false;
+    }
+
+    if (!/^[0-9]{6}$/.test(details.pincode.trim())) {
+      showPopup("Please enter a valid 6-digit PIN code.");
+      return false;
+    }
+
+    if (!/^[0-9+\-\s()]{7,20}$/.test(details.phone.trim())) {
+      showPopup("Please enter a valid phone number.");
+      return false;
+    }
+
+    if (!cart.length) {
+      showPopup("Your cart is empty.");
+      return false;
+    }
+
+    if (hasMissingPrices) {
+      showPopup(
+        "A product price could not be loaded. Please refresh the page and try again."
+      );
+      return false;
+    }
+
+    if (cart.some((item) => !getProductId(item))) {
+      showPopup("A cart item is missing its product ID. Please update your cart.");
+      return false;
+    }
+
+    return true;
+  }
+
+  async function apiRequest(path, options = {}) {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("authToken")}`
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
       },
-      body: JSON.stringify({
-        userId: currentUser.id,
-        items: orderItems,
-        totalAmount,
-        deliveryAddress: {
-          name: details.name,
-          email: details.email,
-          phone: details.phone,
-          address: details.address,
-          city: details.city,
-          state: details.state,
-          pincode: details.pincode
-        },
-        delivery: details.delivery,
-        ...paymentDetails
-      })
     });
 
-    return response;
-  };
+    const data = await response.json().catch(() => ({}));
 
-  // Send confirmation email
-  const sendConfirmationEmail = () => {
-    return emailjs.send(
-      "service_7cp9b49",
-      "template_dur2sn2",
-      {
-        name: details.name,
-        email: details.email,
-        phone: details.phone,
-        address: details.address,
-        city: details.city,
-        state: details.state,
-        pincode: details.pincode,
-        payment: details.payment
-      },
-      "FjfopWTtheTG-NIEi"
-    );
-  };
+    if (!response.ok) {
+      throw new Error(
+        data.message || data.error || "The request could not be completed."
+      );
+    }
 
-  // Load Razorpay Checkout
-  const loadRazorpay = () => {
+    return data;
+  }
+
+  function getDeliveryAddress() {
+    return {
+      name: details.name.trim(),
+      email: details.email.trim(),
+      phone: details.phone.trim(),
+      address: details.address.trim(),
+      city: details.city.trim(),
+      state: details.state.trim(),
+      pincode: details.pincode.trim(),
+    };
+  }
+
+  async function sendConfirmationEmail(orderId, amount) {
+    try {
+      await emailjs.send(
+        EMAIL_SERVICE_ID,
+        EMAIL_TEMPLATE_ID,
+        {
+          to_name: details.name.trim(),
+          to_email: details.email.trim(),
+          email: details.email.trim(),
+          order_id: orderId || "Nexora order",
+          total_amount: Number(amount).toFixed(2),
+          payment_method: details.payment,
+          delivery_method: details.delivery,
+          delivery_address: [
+            details.address.trim(),
+            details.city.trim(),
+            details.state.trim(),
+            details.pincode.trim(),
+          ].join(", "),
+        },
+        EMAIL_PUBLIC_KEY
+      );
+    } catch (error) {
+      console.error("Confirmation email failed:", error);
+    }
+  }
+
+  function finishCheckout() {
+    localStorage.setItem("cart", JSON.stringify([]));
+    setCart([]);
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
+    window.dispatchEvent(new Event("storage"));
+  }
+
+  async function placeCashOnDeliveryOrder(orderItems) {
+    const result = await apiRequest("/api/orders", {
+      method: "POST",
+      body: JSON.stringify({
+        items: orderItems,
+        deliveryAddress: getDeliveryAddress(),
+        delivery: details.delivery,
+        paymentMethod: "Cash on Delivery",
+      }),
+    });
+
+    const order = result.order || result;
+    const confirmedTotal =
+      Number(order.totalAmount) >= 0
+        ? Number(order.totalAmount)
+        : totalAmount;
+
+    await sendConfirmationEmail(order._id || result.orderId, confirmedTotal);
+
+    finishCheckout();
+    showPopup("Your order has been placed successfully!");
+
+    setTimeout(() => navigate("/order-success"), 700);
+  }
+
+  function loadRazorpay() {
     return new Promise((resolve) => {
       if (window.Razorpay) {
         resolve(true);
@@ -131,549 +360,376 @@ function Checkout() {
 
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
-
-      script.onload = () => resolve(true);
+      script.async = true;
+      script.onload = () => resolve(Boolean(window.Razorpay));
       script.onerror = () => resolve(false);
-
       document.body.appendChild(script);
     });
-  };
+  }
 
-  const placeOrder = async () => {
-    // Validate address details
-    if (
-      !details.name ||
-      !details.email ||
-      !details.phone ||
-      !details.address ||
-      !details.city ||
-      !details.state ||
-      !details.pincode
-    ) {
-      showPopup("Please fill all the details.");
-      return;
+  async function placeOnlinePaymentOrder(orderItems) {
+    const loaded = await loadRazorpay();
+
+    if (!loaded) {
+      throw new Error(
+        "Payment checkout could not be loaded. Please try again."
+      );
     }
 
-    try {
-      // Check login
-      const currentUser = JSON.parse(
-        localStorage.getItem("currentUser") || "null"
-      );
+    const created = await apiRequest("/api/payment/create-order", {
+      method: "POST",
+      body: JSON.stringify({
+        items: orderItems,
+        deliveryAddress: getDeliveryAddress(),
+        delivery: details.delivery,
+        paymentMethod: details.payment,
+      }),
+    });
 
-      if (!currentUser || !currentUser.id) {
-        showPopup("Please login before placing an order.");
+    if (!created.order?.id || !created.key) {
+      throw new Error("Unable to create the payment order.");
+    }
 
-        setTimeout(() => {
-          navigate("/login");
-        }, 2500);
+    return new Promise((resolve, reject) => {
+      let paymentFinished = false;
 
-        return;
-      }
-
-      // Get latest cart
-      let cart = [];
-
-      try {
-        const storedCart = JSON.parse(
-          localStorage.getItem("cart") || "[]"
-        );
-        cart = Array.isArray(storedCart) ? storedCart : [];
-      } catch {
-        cart = [];
-      }
-
-      if (cart.length === 0) {
-        showPopup("Your cart is empty.");
-
-        setTimeout(() => {
-          navigate("/cart");
-        }, 2500);
-
-        return;
-      }
-
-      // Prepare order items
-      const orderItems = cart.map((item) => ({
-        productId: item._id || item.productId,
-        name: item.name,
-        price:
-          typeof item.price === "number"
-            ? item.price
-            : parseInt(String(item.price).replace(/[^\d]/g, ""), 10) || 0,
-        quantity: Number(item.quantity) || 1,
-        image: item.image
-      }));
-
-      // Calculate total
-      let totalAmount = orderItems.reduce(
-        (total, item) => total + item.price * item.quantity,
-        0
-      );
-
-      if (details.delivery === "Express Delivery") {
-        totalAmount += 50;
-      }
-
-      // CASH ON DELIVERY
-      if (details.payment === "Cash on Delivery") {
-        const orderResponse = await saveOrder(
-          orderItems,
-          totalAmount,
-          currentUser,
-          {
-            paymentMethod: "Cash on Delivery",
-            paymentStatus: "Pending"
-          }
-        );
-
-        const orderData = await orderResponse.json();
-
-        if (!orderResponse.ok) {
-          showPopup(orderData.message || "Failed to place order.");
-          return;
-        }
-
-        console.log("COD Order saved:", orderData);
-
-        try {
-          await sendConfirmationEmail();
-          console.log("Confirmation email sent.");
-        } catch (emailError) {
-          console.log("Email error:", emailError);
-        }
-
-        localStorage.removeItem("cart");
-        window.dispatchEvent(new Event("cart-wishlist-updated"));
-
-        showPopup("✓ Order placed successfully!");
-
-        setTimeout(() => {
-          navigate("/order-success");
-        }, 2500);
-
-        return;
-      }
-
-      // RAZORPAY PAYMENT
-      showPopup("Opening secure payment...");
-
-      const razorpayLoaded = await loadRazorpay();
-
-      if (!razorpayLoaded) {
-        showPopup("Unable to load Razorpay. Please try again.");
-        return;
-      }
-
-      // Create Razorpay order
-      const paymentOrderResponse = await fetch(
-        `${API_BASE_URL}/api/payment/create-order`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`
-          },
-          body: JSON.stringify({
-            amount: totalAmount
-          })
-        }
-      );
-
-      const paymentOrderData = await paymentOrderResponse.json();
-
-      if (!paymentOrderResponse.ok) {
-        showPopup(
-          paymentOrderData.message || "Unable to create payment."
-        );
-        return;
-      }
-
-      const razorpayOrder = paymentOrderData.order;
-
-      // Razorpay checkout options
-      const options = {
-        key: paymentOrderData.key,
-        amount: razorpayOrder.amount,
-        currency: razorpayOrder.currency,
+      const razorpay = new window.Razorpay({
+        key: created.key,
+        amount: created.order.amount,
+        currency: created.order.currency || "INR",
         name: "Nexora",
-        description: "Nexora E-Commerce Order",
-        order_id: razorpayOrder.id,
+        description: "Nexora purchase",
+        order_id: created.order.id,
         prefill: {
-          name: details.name,
-          email: details.email,
-          contact: details.phone
+          name: details.name.trim(),
+          email: details.email.trim(),
+          contact: details.phone.trim(),
         },
         theme: {
-          color: "#28a745"
+          color: "#16803c",
         },
-        handler: async function (paymentResponse) {
+
+        handler: async (paymentResponse) => {
+          if (paymentFinished) return;
+          paymentFinished = true;
+
           try {
-            showPopup("Verifying payment...");
+            const verification = await apiRequest("/api/payment/verify", {
+              method: "POST",
+              body: JSON.stringify({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              }),
+            });
 
-            // Verify Razorpay payment
-            const verifyResponse = await fetch(
-              `${API_BASE_URL}/api/payment/verify`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${localStorage.getItem("authToken")}`
-                },
-                body: JSON.stringify({
-                  razorpay_order_id:
-                    paymentResponse.razorpay_order_id,
-                  razorpay_payment_id:
-                    paymentResponse.razorpay_payment_id,
-                  razorpay_signature:
-                    paymentResponse.razorpay_signature
-                })
-              }
+            await sendConfirmationEmail(
+              verification.orderId || created.nexoraOrderId,
+              Number(created.order.amount) / 100
             );
 
-            const verifyData = await verifyResponse.json();
+            finishCheckout();
+            showPopup("Payment successful! Your order has been placed.");
 
-            if (!verifyResponse.ok || !verifyData.verified) {
-              showPopup("Payment verification failed.");
-              return;
-            }
-
-            showPopup("Payment successful! Saving order...");
-
-            // Save order only after payment verification
-            const orderResponse = await saveOrder(
-              orderItems,
-              totalAmount,
-              currentUser,
-              {
-                paymentMethod: details.payment,
-                paymentStatus: "Paid",
-                razorpayOrderId:
-                  paymentResponse.razorpay_order_id,
-                razorpayPaymentId:
-                  paymentResponse.razorpay_payment_id
-              }
-            );
-
-            const orderData = await orderResponse.json();
-
-            if (!orderResponse.ok) {
-              showPopup(
-                orderData.message ||
-                  "Payment successful but order could not be saved."
-              );
-              return;
-            }
-
-            console.log("Online order saved:", orderData);
-
-            try {
-              await sendConfirmationEmail();
-              console.log("Confirmation email sent.");
-            } catch (emailError) {
-              console.log("Email could not be sent:", emailError);
-            }
-
-            localStorage.removeItem("cart");
-            window.dispatchEvent(new Event("cart-wishlist-updated"));
-
-            showPopup("✓ Order placed successfully!");
-
-            setTimeout(() => {
-              navigate("/order-success");
-            }, 2500);
+            setTimeout(() => navigate("/order-success"), 700);
+            resolve(verification);
           } catch (error) {
-            console.error("Payment verification error:", error);
             showPopup(
-              "Payment verification failed. Please contact support."
+              "Payment confirmation failed. Please contact support before trying to pay again."
             );
+            reject(error);
           }
         },
+
         modal: {
-          ondismiss: function () {
-            showPopup("Payment cancelled. Your cart is still saved.");
-          }
-        }
-      };
+          ondismiss: () => {
+            if (paymentFinished) return;
+            paymentFinished = true;
+            reject(new Error("Payment cancelled. Your cart has been kept."));
+          },
+        },
+      });
 
-      // Open Razorpay
-      const razorpay = new window.Razorpay(options);
+      razorpay.on("payment.failed", (response) => {
+        if (paymentFinished) return;
+        paymentFinished = true;
 
-      razorpay.on("payment.failed", function (response) {
-        console.error("Payment failed:", response.error);
-        showPopup("Payment failed. Your cart is still saved.");
+        reject(
+          new Error(
+            response?.error?.description ||
+              "Payment failed. Your cart has been kept."
+          )
+        );
       });
 
       razorpay.open();
-    } catch (error) {
-      console.error("Order error:", error);
-      showPopup(
-        "Unable to connect to server. Please make sure the backend is running."
-      );
+    });
+  }
+
+  async function placeOrder(event) {
+    event.preventDefault();
+
+    if (loading || !validateCheckout()) return;
+
+    const user = getCurrentUser();
+
+    if (!user || !getAuthToken()) {
+      showPopup("Please log in again before placing your order.");
+      setTimeout(() => navigate("/login"), 900);
+      return;
     }
-  };
+
+    const orderItems = getOrderItems();
+
+    setLoading(true);
+
+    try {
+      if (details.payment === "Cash on Delivery") {
+        await placeCashOnDeliveryOrder(orderItems);
+      } else if (
+        details.payment === "UPI" ||
+        details.payment === "Credit / Debit Card"
+      ) {
+        await placeOnlinePaymentOrder(orderItems);
+      } else {
+        throw new Error("Please select a valid payment method.");
+      }
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      showPopup(error.message || "Unable to place your order.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="checkout-page">
-      {message && (
-        <div className="checkout-toast">
-          {message}
+      {toast && (
+        <div className="checkout-toast" role="status">
+          {toast}
         </div>
       )}
 
-      <h1>Checkout</h1>
-
       <div className="checkout-container">
-        {/* LEFT - DELIVERY ADDRESS */}
-        <div className="address-box">
-          <div className="checkout-title">
-            <span className="checkout-icon">📍</span>
-            <div>
-              <h2>Delivery Address</h2>
-              <p>Enter your delivery details</p>
-            </div>
-          </div>
+        <h1>Checkout</h1>
 
-          <div className="form-group">
-            <label>Full Name</label>
-            <input
-              type="text"
-              name="name"
-              placeholder="Enter your full name"
-              value={details.name}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Email Address</label>
-            <input
-              type="email"
-              name="email"
-              placeholder="Enter your email address"
-              value={details.email}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Phone Number</label>
-            <input
-              type="text"
-              name="phone"
-              placeholder="Enter your phone number"
-              value={details.phone}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Address</label>
-            <textarea
-              name="address"
-              placeholder="House / Street / Area"
-              value={details.address}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="two-column-fields">
-            <div className="form-group">
-              <label>City</label>
-              <input
-                type="text"
-                name="city"
-                placeholder="City"
-                value={details.city}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>State</label>
-              <input
-                type="text"
-                name="state"
-                placeholder="State"
-                value={details.state}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Pincode</label>
-            <input
-              type="text"
-              name="pincode"
-              placeholder="6-digit pincode"
-              value={details.pincode}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-
-        {/* RIGHT SIDE */}
-        <div className="checkout-right">
-          {/* PAYMENT METHOD */}
-          <div className="checkout-section">
-            <div className="checkout-title">
-              <span className="checkout-icon">💳</span>
-              <div>
-                <h2>Payment Method</h2>
-                <p>Choose your preferred payment</p>
-              </div>
-            </div>
-
-            <label
-              className={`payment-option ${
-                details.payment === "Cash on Delivery"
-                  ? "selected"
-                  : ""
-              }`}
+        {!cart.length ? (
+          <div className="empty-cart">
+            <p>Your cart is empty.</p>
+            <button
+              type="button"
+              className="place-btn"
+              onClick={() => navigate("/categories")}
             >
-              <input
-                type="radio"
-                name="payment"
-                value="Cash on Delivery"
-                checked={details.payment === "Cash on Delivery"}
-                onChange={handleChange}
-              />
-              <div className="option-content">
-                <strong>Cash on Delivery</strong>
-                <span>Pay when your order arrives</span>
-              </div>
-            </label>
-
-            <label
-              className={`payment-option ${
-                details.payment === "UPI" ? "selected" : ""
-              }`}
-            >
-              <input
-                type="radio"
-                name="payment"
-                value="UPI"
-                checked={details.payment === "UPI"}
-                onChange={handleChange}
-              />
-              <div className="option-content">
-                <strong>UPI</strong>
-                <span>Pay securely using UPI</span>
-              </div>
-            </label>
-
-            <label
-              className={`payment-option ${
-                details.payment === "Credit / Debit Card"
-                  ? "selected"
-                  : ""
-              }`}
-            >
-              <input
-                type="radio"
-                name="payment"
-                value="Credit / Debit Card"
-                checked={details.payment === "Credit / Debit Card"}
-                onChange={handleChange}
-              />
-              <div className="option-content">
-                <strong>Credit / Debit Card</strong>
-                <span>Secure payment through Razorpay</span>
-              </div>
-            </label>
-          </div>
-
-          {/* DELIVERY OPTION */}
-          <div className="checkout-section">
-            <div className="checkout-title">
-              <span className="checkout-icon">🚚</span>
-              <div>
-                <h2>Delivery Option</h2>
-                <p>Select your preferred delivery speed</p>
-              </div>
-            </div>
-
-            <label
-              className={`delivery-option ${
-                details.delivery === "Standard Delivery"
-                  ? "selected"
-                  : ""
-              }`}
-            >
-              <input
-                type="radio"
-                name="delivery"
-                value="Standard Delivery"
-                checked={details.delivery === "Standard Delivery"}
-                onChange={handleChange}
-              />
-              <div className="option-content">
-                <strong>Standard Delivery</strong>
-                <span>Reliable delivery</span>
-              </div>
-              <b className="free-price">FREE</b>
-            </label>
-
-            <label
-              className={`delivery-option ${
-                details.delivery === "Express Delivery"
-                  ? "selected"
-                  : ""
-              }`}
-            >
-              <input
-                type="radio"
-                name="delivery"
-                value="Express Delivery"
-                checked={details.delivery === "Express Delivery"}
-                onChange={handleChange}
-              />
-              <div className="option-content">
-                <strong>Express Delivery</strong>
-                <span>Faster delivery</span>
-              </div>
-              <b>₹50</b>
-            </label>
-          </div>
-
-          {/* ORDER SUMMARY */}
-          <div className="checkout-section summary-box">
-            <div className="checkout-title">
-              <span className="checkout-icon">🧾</span>
-              <div>
-                <h2>Order Summary</h2>
-                <p>Review your order before placing it</p>
-              </div>
-            </div>
-
-            <div className="summary-row">
-              <span>Products</span>
-              <span>₹{productSubtotal}</span>
-            </div>
-
-            <div className="summary-row">
-              <span>Delivery</span>
-              <span>
-                {deliveryCharge === 0
-                  ? "Free"
-                  : `₹${deliveryCharge}`}
-              </span>
-            </div>
-
-            <div className="summary-total">
-              <strong>Total Amount</strong>
-              <strong>₹{finalTotal}</strong>
-            </div>
-
-            <button className="place-btn" onClick={placeOrder}>
-              Place Order
+              Continue Shopping
             </button>
-
-            <p className="secure-note">
-              🔒 Your payment and personal information are securely protected.
-            </p>
           </div>
-        </div>
+        ) : (
+          <form onSubmit={placeOrder}>
+            <div className="checkout-content">
+              <section className="address-box">
+                <h2>Delivery Address</h2>
+
+                <label htmlFor="checkout-name">Full Name</label>
+                <input
+                  id="checkout-name"
+                  name="name"
+                  value={details.name}
+                  onChange={handleChange}
+                  autoComplete="name"
+                  required
+                />
+
+                <label htmlFor="checkout-email">Email Address</label>
+                <input
+                  id="checkout-email"
+                  type="email"
+                  name="email"
+                  value={details.email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                  required
+                />
+
+                <label htmlFor="checkout-phone">Phone Number</label>
+                <input
+                  id="checkout-phone"
+                  type="tel"
+                  name="phone"
+                  value={details.phone}
+                  onChange={handleChange}
+                  autoComplete="tel"
+                  required
+                />
+
+                <label htmlFor="checkout-address">Address</label>
+                <textarea
+                  id="checkout-address"
+                  name="address"
+                  value={details.address}
+                  onChange={handleChange}
+                  autoComplete="street-address"
+                  rows="3"
+                  required
+                />
+
+                <label htmlFor="checkout-city">City</label>
+                <input
+                  id="checkout-city"
+                  name="city"
+                  value={details.city}
+                  onChange={handleChange}
+                  autoComplete="address-level2"
+                  required
+                />
+
+                <label htmlFor="checkout-state">State</label>
+                <input
+                  id="checkout-state"
+                  name="state"
+                  value={details.state}
+                  onChange={handleChange}
+                  autoComplete="address-level1"
+                  required
+                />
+
+                <label htmlFor="checkout-pincode">PIN Code</label>
+                <input
+                  id="checkout-pincode"
+                  name="pincode"
+                  value={details.pincode}
+                  onChange={handleChange}
+                  autoComplete="postal-code"
+                  inputMode="numeric"
+                  maxLength="6"
+                  required
+                />
+              </section>
+
+              <div className="checkout-side">
+                <section className="delivery-box">
+                  <h2>Delivery Method</h2>
+
+                  <label className="checkout-option">
+                    <input
+                      type="radio"
+                      name="delivery"
+                      value="Standard Delivery"
+                      checked={details.delivery === "Standard Delivery"}
+                      onChange={handleChange}
+                    />
+                    <span>
+                      <strong>Standard Delivery</strong>
+                      <span>Free delivery</span>
+                    </span>
+                  </label>
+
+                  <label className="checkout-option">
+                    <input
+                      type="radio"
+                      name="delivery"
+                      value="Express Delivery"
+                      checked={details.delivery === "Express Delivery"}
+                      onChange={handleChange}
+                    />
+                    <span>
+                      <strong>Express Delivery</strong>
+                      <span>Additional ₹50</span>
+                    </span>
+                  </label>
+                </section>
+
+                <section className="payment-box">
+                  <h2>Payment Method</h2>
+
+                  {["Cash on Delivery", "UPI", "Credit / Debit Card"].map(
+                    (method) => (
+                      <label className="checkout-option" key={method}>
+                        <input
+                          type="radio"
+                          name="payment"
+                          value={method}
+                          checked={details.payment === method}
+                          onChange={handleChange}
+                        />
+                        <span>{method}</span>
+                      </label>
+                    )
+                  )}
+
+                  <p className="payment-note">
+                    Online payments are securely processed through Razorpay.
+                  </p>
+                </section>
+
+                <section className="order-summary">
+                  <h2>Order Summary</h2>
+
+                  {cart.map((item, index) => {
+                    const price = getProductPrice(item);
+                    const quantity = getQuantity(item);
+
+                    return (
+                      <div
+                        className="checkout-summary-item"
+                        key={getProductId(item) || index}
+                      >
+                        <span>
+                          {item.name || item.title || "Product"} × {quantity}
+                        </span>
+                        <span>
+                          {price === null
+                            ? "Price unavailable"
+                            : `₹${(price * quantity).toFixed(2)}`}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  <div className="checkout-summary-row">
+                    <span>Subtotal</span>
+                    <span>₹{productSubtotal.toFixed(2)}</span>
+                  </div>
+
+                  <div className="checkout-summary-row">
+                    <span>Delivery</span>
+                    <span>
+                      {deliveryCharge === 0
+                        ? "Free"
+                        : `₹${deliveryCharge.toFixed(2)}`}
+                    </span>
+                  </div>
+
+                  <div className="checkout-summary-row checkout-total">
+                    <strong>Total</strong>
+                    <strong>₹{totalAmount.toFixed(2)}</strong>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="place-btn"
+                    disabled={loading || hasMissingPrices}
+                  >
+                    {loading
+                      ? "Processing..."
+                      : details.payment === "Cash on Delivery"
+                      ? "Place Order"
+                      : "Pay Securely"}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="continue-shopping-btn"
+                    onClick={() => navigate("/cart")}
+                    disabled={loading}
+                  >
+                    Back to Cart
+                  </button>
+                </section>
+              </div>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
