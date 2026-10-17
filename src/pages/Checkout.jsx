@@ -12,17 +12,20 @@ const EMAIL_SERVICE_ID = "service_7cp9b49";
 const EMAIL_TEMPLATE_ID = "template_dur2sn2";
 const EMAIL_PUBLIC_KEY = "FjfopWTtheTG-NIEi0";
 
+// Get a product ID from different possible cart formats.
 function getProductId(item) {
-  return String(
+  const id =
+    item?.productId?._id ||
+    item?.product?._id ||
+    item?.productId?.id ||
+    item?.productId ||
     item?._id ||
-      item?.productId?._id ||
-      item?.productId ||
-      item?.product?._id ||
-      item?.id ||
-      ""
-  );
+    item?.id;
+
+  return id ? String(id) : "";
 }
 
+// Get a valid price without treating null or empty strings as zero.
 function getProductPrice(item) {
   const candidates = [
     item?.price,
@@ -59,6 +62,7 @@ function Checkout() {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState("");
+
   const [details, setDetails] = useState({
     name: "",
     email: "",
@@ -78,7 +82,10 @@ function Checkout() {
       let savedCart = [];
 
       try {
-        const parsed = JSON.parse(localStorage.getItem("cart") || "[]");
+        const parsed = JSON.parse(
+          localStorage.getItem("cart") || "[]"
+        );
+
         savedCart = Array.isArray(parsed) ? parsed : [];
       } catch (error) {
         console.error("Unable to read cart:", error);
@@ -100,43 +107,69 @@ function Checkout() {
         console.error("Unable to read user details:", error);
       }
 
-      // Fetch current product data so missing cart prices can be recovered.
       try {
-        const response = await fetch(`${API_BASE_URL}/api/products`);
+        const response = await fetch(
+          `${API_BASE_URL}/api/products`
+        );
 
-        if (response.ok) {
-          const data = await response.json();
-          const products = Array.isArray(data)
-            ? data
-            : Array.isArray(data.products)
-            ? data.products
-            : [];
-
-          const productMap = new Map(
-            products.map((product) => [
-              String(product._id || product.id || ""),
-              product,
-            ])
-          );
-
-          savedCart = savedCart.map((item) => {
-            const product = productMap.get(getProductId(item));
-
-            if (!product) return item;
-
-            return {
-              ...product,
-              ...item,
-              _id: product._id || item._id,
-              name: item.name || product.name,
-              image: item.image || product.image,
-              price:
-                getProductPrice(item) !== null
-                  ? getProductPrice(item)
-                  : getProductPrice(product),
-            };
-          });
+        if (!response.ok) {
+          throw new Error("Could not fetch products.");
         }
+
+        const data = await response.json();
+
+        const products = Array.isArray(data)
+          ? data
+          : Array.isArray(data.products)
+          ? data.products
+          : [];
+
+        const productMap = new Map();
+
+        products.forEach((product) => {
+          const id = String(product._id || product.id || "");
+
+          if (id) {
+            productMap.set(id, product);
+          }
+        });
+
+        savedCart = savedCart.map((item) => {
+          const productId = getProductId(item);
+          const product = productMap.get(productId);
+
+          if (!product) {
+            console.warn(
+              "Cart product was not found in MongoDB:",
+              productId,
+              item
+            );
+
+            return item;
+          }
+
+          const cartPrice = getProductPrice(item);
+          const databasePrice = getProductPrice(product);
+
+          return {
+            ...product,
+            ...item,
+
+            // Keep the MongoDB product ID as the primary ID.
+            _id: product._id || item._id,
+
+            productId: product._id || productId,
+
+            name: item.name || item.title || product.name,
+            image: item.image || product.image,
+
+            // Prefer the current database price.
+            price:
+              databasePrice !== null
+                ? databasePrice
+                : cartPrice,
+          };
+        });
       } catch (error) {
         console.error("Unable to refresh product prices:", error);
       }
@@ -155,7 +188,9 @@ function Checkout() {
 
   const productSubtotal = cart.reduce((total, item) => {
     const price = getProductPrice(item);
-    return total + (price === null ? 0 : price * getQuantity(item));
+
+    return total +
+      (price === null ? 0 : price * getQuantity(item));
   }, 0);
 
   const hasMissingPrices = cart.some(
@@ -191,7 +226,9 @@ function Checkout() {
 
   function getCurrentUser() {
     try {
-      return JSON.parse(localStorage.getItem("currentUser") || "null");
+      return JSON.parse(
+        localStorage.getItem("currentUser") || "null"
+      );
     } catch {
       return null;
     }
@@ -222,7 +259,11 @@ function Checkout() {
       }
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim())) {
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        details.email.trim()
+      )
+    ) {
       showPopup("Please enter a valid email address.");
       return false;
     }
@@ -244,13 +285,15 @@ function Checkout() {
 
     if (hasMissingPrices) {
       showPopup(
-        "A product price could not be loaded. Please refresh the page and try again."
+        "A product price could not be loaded. Please remove it from your cart and add it again."
       );
       return false;
     }
 
     if (cart.some((item) => !getProductId(item))) {
-      showPopup("A cart item is missing its product ID. Please update your cart.");
+      showPopup(
+        "A cart item is missing its product ID. Please remove it and add it again."
+      );
       return false;
     }
 
@@ -264,7 +307,9 @@ function Checkout() {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(token
+          ? { Authorization: `Bearer ${token}` }
+          : {}),
         ...(options.headers || {}),
       },
     });
@@ -273,7 +318,9 @@ function Checkout() {
 
     if (!response.ok) {
       throw new Error(
-        data.message || data.error || "The request could not be completed."
+        data.message ||
+          data.error ||
+          "The request could not be completed."
       );
     }
 
@@ -322,7 +369,11 @@ function Checkout() {
   function finishCheckout() {
     localStorage.setItem("cart", JSON.stringify([]));
     setCart([]);
-    window.dispatchEvent(new Event("cart-wishlist-updated"));
+
+    window.dispatchEvent(
+      new Event("cart-wishlist-updated")
+    );
+
     window.dispatchEvent(new Event("storage"));
   }
 
@@ -338,14 +389,14 @@ function Checkout() {
     });
 
     const order = result.order || result;
-    const confirmedTotal =
-      Number(order.totalAmount) >= 0
-        ? Number(order.totalAmount)
-        : totalAmount;
 
-    await sendConfirmationEmail(order._id || result.orderId, confirmedTotal);
+    await sendConfirmationEmail(
+      order._id || result.orderId,
+      Number(order.totalAmount ?? totalAmount)
+    );
 
     finishCheckout();
+
     showPopup("Your order has been placed successfully!");
 
     setTimeout(() => navigate("/order-success"), 700);
@@ -359,10 +410,14 @@ function Checkout() {
       }
 
       const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+
+      script.src =
+        "https://checkout.razorpay.com/v1/checkout.js";
+
       script.async = true;
       script.onload = () => resolve(Boolean(window.Razorpay));
       script.onerror = () => resolve(false);
+
       document.body.appendChild(script);
     });
   }
@@ -376,18 +431,27 @@ function Checkout() {
       );
     }
 
-    const created = await apiRequest("/api/payment/create-order", {
-      method: "POST",
-      body: JSON.stringify({
-        items: orderItems,
-        deliveryAddress: getDeliveryAddress(),
-        delivery: details.delivery,
-        paymentMethod: details.payment,
-      }),
-    });
+    const created = await apiRequest(
+      "/api/payment/create-order",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          items: orderItems,
+          deliveryAddress: getDeliveryAddress(),
+          delivery: details.delivery,
+          paymentMethod: details.payment,
+        }),
+      }
+    );
 
     if (!created.order?.id || !created.key) {
       throw new Error("Unable to create the payment order.");
+    }
+
+    if (!created.nexoraOrderId) {
+      throw new Error(
+        "The server did not return the Nexora order ID. Please contact support."
+      );
     }
 
     return new Promise((resolve, reject) => {
@@ -400,11 +464,13 @@ function Checkout() {
         name: "Nexora",
         description: "Nexora purchase",
         order_id: created.order.id,
+
         prefill: {
           name: details.name.trim(),
           email: details.email.trim(),
           contact: details.phone.trim(),
         },
+
         theme: {
           color: "#16803c",
         },
@@ -414,29 +480,51 @@ function Checkout() {
           paymentFinished = true;
 
           try {
-            const verification = await apiRequest("/api/payment/verify", {
-              method: "POST",
-              body: JSON.stringify({
-                razorpay_order_id: paymentResponse.razorpay_order_id,
-                razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                razorpay_signature: paymentResponse.razorpay_signature,
-              }),
-            });
+            const verification = await apiRequest(
+              "/api/payment/verify",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  nexoraOrderId: created.nexoraOrderId,
+                  razorpay_order_id:
+                    paymentResponse.razorpay_order_id,
+                  razorpay_payment_id:
+                    paymentResponse.razorpay_payment_id,
+                  razorpay_signature:
+                    paymentResponse.razorpay_signature,
+                }),
+              }
+            );
+
+            if (!verification.verified) {
+              throw new Error(
+                "The server could not confirm your payment."
+              );
+            }
 
             await sendConfirmationEmail(
-              verification.orderId || created.nexoraOrderId,
+              verification.order?._id ||
+                created.nexoraOrderId,
               Number(created.order.amount) / 100
             );
 
             finishCheckout();
-            showPopup("Payment successful! Your order has been placed.");
 
-            setTimeout(() => navigate("/order-success"), 700);
+            showPopup(
+              "Payment successful! Your order has been placed."
+            );
+
+            setTimeout(
+              () => navigate("/order-success"),
+              700
+            );
+
             resolve(verification);
           } catch (error) {
             showPopup(
               "Payment confirmation failed. Please contact support before trying to pay again."
             );
+
             reject(error);
           }
         },
@@ -444,14 +532,21 @@ function Checkout() {
         modal: {
           ondismiss: () => {
             if (paymentFinished) return;
+
             paymentFinished = true;
-            reject(new Error("Payment cancelled. Your cart has been kept."));
+
+            reject(
+              new Error(
+                "Payment cancelled. Your cart has been kept."
+              )
+            );
           },
         },
       });
 
       razorpay.on("payment.failed", (response) => {
         if (paymentFinished) return;
+
         paymentFinished = true;
 
         reject(
@@ -474,7 +569,10 @@ function Checkout() {
     const user = getCurrentUser();
 
     if (!user || !getAuthToken()) {
-      showPopup("Please log in again before placing your order.");
+      showPopup(
+        "Please log in again before placing your order."
+      );
+
       setTimeout(() => navigate("/login"), 900);
       return;
     }
@@ -496,7 +594,10 @@ function Checkout() {
       }
     } catch (error) {
       console.error("Checkout failed:", error);
-      showPopup(error.message || "Unable to place your order.");
+
+      showPopup(
+        error.message || "Unable to place your order."
+      );
     } finally {
       setLoading(false);
     }
@@ -516,6 +617,7 @@ function Checkout() {
         {!cart.length ? (
           <div className="empty-cart">
             <p>Your cart is empty.</p>
+
             <button
               type="button"
               className="place-btn"
@@ -540,7 +642,9 @@ function Checkout() {
                   required
                 />
 
-                <label htmlFor="checkout-email">Email Address</label>
+                <label htmlFor="checkout-email">
+                  Email Address
+                </label>
                 <input
                   id="checkout-email"
                   type="email"
@@ -551,7 +655,9 @@ function Checkout() {
                   required
                 />
 
-                <label htmlFor="checkout-phone">Phone Number</label>
+                <label htmlFor="checkout-phone">
+                  Phone Number
+                </label>
                 <input
                   id="checkout-phone"
                   type="tel"
@@ -562,7 +668,9 @@ function Checkout() {
                   required
                 />
 
-                <label htmlFor="checkout-address">Address</label>
+                <label htmlFor="checkout-address">
+                  Address
+                </label>
                 <textarea
                   id="checkout-address"
                   name="address"
@@ -593,7 +701,9 @@ function Checkout() {
                   required
                 />
 
-                <label htmlFor="checkout-pincode">PIN Code</label>
+                <label htmlFor="checkout-pincode">
+                  PIN Code
+                </label>
                 <input
                   id="checkout-pincode"
                   name="pincode"
@@ -615,7 +725,9 @@ function Checkout() {
                       type="radio"
                       name="delivery"
                       value="Standard Delivery"
-                      checked={details.delivery === "Standard Delivery"}
+                      checked={
+                        details.delivery === "Standard Delivery"
+                      }
                       onChange={handleChange}
                     />
                     <span>
@@ -629,7 +741,9 @@ function Checkout() {
                       type="radio"
                       name="delivery"
                       value="Express Delivery"
-                      checked={details.delivery === "Express Delivery"}
+                      checked={
+                        details.delivery === "Express Delivery"
+                      }
                       onChange={handleChange}
                     />
                     <span>
@@ -642,23 +756,29 @@ function Checkout() {
                 <section className="payment-box">
                   <h2>Payment Method</h2>
 
-                  {["Cash on Delivery", "UPI", "Credit / Debit Card"].map(
-                    (method) => (
-                      <label className="checkout-option" key={method}>
-                        <input
-                          type="radio"
-                          name="payment"
-                          value={method}
-                          checked={details.payment === method}
-                          onChange={handleChange}
-                        />
-                        <span>{method}</span>
-                      </label>
-                    )
-                  )}
+                  {[
+                    "Cash on Delivery",
+                    "UPI",
+                    "Credit / Debit Card",
+                  ].map((method) => (
+                    <label
+                      className="checkout-option"
+                      key={method}
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        value={method}
+                        checked={details.payment === method}
+                        onChange={handleChange}
+                      />
+                      <span>{method}</span>
+                    </label>
+                  ))}
 
                   <p className="payment-note">
-                    Online payments are securely processed through Razorpay.
+                    Online payments are securely processed
+                    through Razorpay.
                   </p>
                 </section>
 
@@ -675,12 +795,18 @@ function Checkout() {
                         key={getProductId(item) || index}
                       >
                         <span>
-                          {item.name || item.title || "Product"} × {quantity}
+                          {item.name ||
+                            item.title ||
+                            "Product"}{" "}
+                          × {quantity}
                         </span>
+
                         <span>
                           {price === null
                             ? "Price unavailable"
-                            : `₹${(price * quantity).toFixed(2)}`}
+                            : `₹${(
+                                price * quantity
+                              ).toFixed(2)}`}
                         </span>
                       </div>
                     );
@@ -688,7 +814,9 @@ function Checkout() {
 
                   <div className="checkout-summary-row">
                     <span>Subtotal</span>
-                    <span>₹{productSubtotal.toFixed(2)}</span>
+                    <span>
+                      ₹{productSubtotal.toFixed(2)}
+                    </span>
                   </div>
 
                   <div className="checkout-summary-row">
@@ -702,7 +830,9 @@ function Checkout() {
 
                   <div className="checkout-summary-row checkout-total">
                     <strong>Total</strong>
-                    <strong>₹{totalAmount.toFixed(2)}</strong>
+                    <strong>
+                      ₹{totalAmount.toFixed(2)}
+                    </strong>
                   </div>
 
                   <button
