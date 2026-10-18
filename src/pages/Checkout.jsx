@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import emailjs from "@emailjs/browser";
@@ -25,7 +24,7 @@ function getProductId(item) {
   return id ? String(id) : "";
 }
 
-// Get a valid price without treating null or empty strings as zero.
+// Get a valid product price.
 function getProductPrice(item) {
   const candidates = [
     item?.price,
@@ -53,13 +52,20 @@ function getProductPrice(item) {
 
 function getQuantity(item) {
   const quantity = Number(item?.quantity);
-  return Number.isInteger(quantity) && quantity > 0 ? quantity : 1;
+  return Number.isInteger(quantity) && quantity > 0
+    ? quantity
+    : 1;
 }
 
 function Checkout() {
   const navigate = useNavigate();
 
   const [cart, setCart] = useState([]);
+
+  // Prevent the empty-cart message from appearing
+  // before localStorage and product data have loaded.
+  const [cartLoading, setCartLoading] = useState(true);
+
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState("");
 
@@ -155,15 +161,14 @@ function Checkout() {
             ...product,
             ...item,
 
-            // Keep the MongoDB product ID as the primary ID.
+            // Keep the MongoDB product ID.
             _id: product._id || item._id,
-
             productId: product._id || productId,
 
             name: item.name || item.title || product.name,
             image: item.image || product.image,
 
-            // Prefer the current database price.
+            // Prefer the latest database price.
             price:
               databasePrice !== null
                 ? databasePrice
@@ -171,11 +176,16 @@ function Checkout() {
           };
         });
       } catch (error) {
-        console.error("Unable to refresh product prices:", error);
-      }
-
-      if (active) {
-        setCart(savedCart);
+        console.error(
+          "Unable to refresh product prices:",
+          error
+        );
+      } finally {
+        // Always finish loading, even if the API fails.
+        if (active) {
+          setCart(savedCart);
+          setCartLoading(false);
+        }
       }
     }
 
@@ -189,8 +199,10 @@ function Checkout() {
   const productSubtotal = cart.reduce((total, item) => {
     const price = getProductPrice(item);
 
-    return total +
-      (price === null ? 0 : price * getQuantity(item));
+    return (
+      total +
+      (price === null ? 0 : price * getQuantity(item))
+    );
   }, 0);
 
   const hasMissingPrices = cart.some(
@@ -564,7 +576,9 @@ function Checkout() {
   async function placeOrder(event) {
     event.preventDefault();
 
-    if (loading || !validateCheckout()) return;
+    if (loading || cartLoading || !validateCheckout()) {
+      return;
+    }
 
     const user = getCurrentUser();
 
@@ -614,7 +628,11 @@ function Checkout() {
       <div className="checkout-container">
         <h1>Checkout</h1>
 
-        {!cart.length ? (
+        {cartLoading ? (
+          <div className="empty-cart">
+            <p>Loading your cart...</p>
+          </div>
+        ) : !cart.length ? (
           <div className="empty-cart">
             <p>Your cart is empty.</p>
 
@@ -632,7 +650,9 @@ function Checkout() {
               <section className="address-box">
                 <h2>Delivery Address</h2>
 
-                <label htmlFor="checkout-name">Full Name</label>
+                <label htmlFor="checkout-name">
+                  Full Name
+                </label>
                 <input
                   id="checkout-name"
                   name="name"
@@ -730,6 +750,7 @@ function Checkout() {
                       }
                       onChange={handleChange}
                     />
+
                     <span>
                       <strong>Standard Delivery</strong>
                       <span>Free delivery</span>
@@ -746,6 +767,7 @@ function Checkout() {
                       }
                       onChange={handleChange}
                     />
+
                     <span>
                       <strong>Express Delivery</strong>
                       <span>Additional ₹50</span>
@@ -772,6 +794,7 @@ function Checkout() {
                         checked={details.payment === method}
                         onChange={handleChange}
                       />
+
                       <span>{method}</span>
                     </label>
                   ))}
@@ -838,7 +861,11 @@ function Checkout() {
                   <button
                     type="submit"
                     className="place-btn"
-                    disabled={loading || hasMissingPrices}
+                    disabled={
+                      loading ||
+                      cartLoading ||
+                      hasMissingPrices
+                    }
                   >
                     {loading
                       ? "Processing..."
