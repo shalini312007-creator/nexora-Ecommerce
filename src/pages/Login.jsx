@@ -1,7 +1,8 @@
+
 import "./login.css";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { API_BASE_URL } from "../api/productApi"; // adjust path to where productApi.js lives
+import { API_BASE_URL } from "../api/productApi";
 
 function Login() {
   const navigate = useNavigate();
@@ -23,10 +24,10 @@ function Login() {
   };
 
   const handleChange = (e) => {
-    setLogin({
-      ...login,
+    setLogin((previous) => ({
+      ...previous,
       [e.target.name]: e.target.value
-    });
+    }));
   };
 
   const loginUser = async () => {
@@ -39,27 +40,24 @@ function Login() {
 
     setIsLoading(true);
 
-    // Stop waiting if the backend does not respond in 15 seconds.
     const controller = new AbortController();
+
     const timeoutId = setTimeout(() => {
       controller.abort();
     }, 15000);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            email: login.email.trim(),
-            password: login.password
-          }),
-          signal: controller.signal
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: login.email.trim(),
+          password: login.password
+        }),
+        signal: controller.signal
+      });
 
       const data = await response.json();
 
@@ -80,7 +78,8 @@ function Login() {
       localStorage.setItem("currentUser", JSON.stringify(data.user));
       localStorage.setItem("authToken", data.token);
 
-      // Preserve the success message across navigation/reload.
+      window.dispatchEvent(new Event("auth-changed"));
+
       sessionStorage.setItem(
         "nexoraToast",
         JSON.stringify({
@@ -89,13 +88,12 @@ function Login() {
         })
       );
 
-      navigate("/profile");
+      setLogin({
+        email: "",
+        password: ""
+      });
 
-      // Keep your existing Navbar refresh behavior.
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
-
+      navigate("/profile", { replace: true });
     } catch (error) {
       console.error("Login error:", error);
 
@@ -124,6 +122,7 @@ function Login() {
         type="email"
         name="email"
         placeholder="Email"
+        autoComplete="username"
         value={login.email}
         onChange={handleChange}
         disabled={isLoading}
@@ -133,6 +132,7 @@ function Login() {
         type="password"
         name="password"
         placeholder="Password"
+        autoComplete="current-password"
         value={login.password}
         onChange={handleChange}
         disabled={isLoading}
@@ -147,8 +147,7 @@ function Login() {
       </button>
 
       <p style={{ marginTop: "20px" }}>
-        Don't have an account?
-        <Link to="/register"> Register</Link>
+        Don't have an account? <Link to="/register">Register</Link>
       </p>
     </div>
   );
