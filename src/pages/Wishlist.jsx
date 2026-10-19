@@ -1,7 +1,26 @@
-import { useEffect, useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../api/productApi"; // adjust path to where productApi.js lives
+import { API_BASE_URL } from "../api/productApi";
 import "./Wishlist.css";
+
+function getSavedWishlist() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+function getSavedCart() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("cart") || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
 
 function Wishlist() {
   const navigate = useNavigate();
@@ -10,68 +29,81 @@ function Wishlist() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // =========================
-  // LOAD WISHLIST
-  // =========================
-  useEffect(() => {
-    const token = localStorage.getItem("authToken");
+  const showMessage = (text) => {
+    setMessage(text);
+    window.setTimeout(() => setMessage(""), 2000);
+  };
 
-    // Logged-in user → MongoDB
-    if (token) {
-      fetch(`${API_BASE_URL}/api/wishlist`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Failed to get wishlist");
-          }
+  const saveWishlist = useCallback((items) => {
+    const safeItems = Array.isArray(items) ? items : [];
 
-          return response.json();
-        })
-        .then((data) => {
-          setWishlist(data);
+    setWishlist(safeItems);
+    localStorage.setItem("wishlist", JSON.stringify(safeItems));
 
-          // Keep localStorage in sync
-          localStorage.setItem(
-            "wishlist",
-            JSON.stringify(data)
-          );
-
-          setLoading(false);
-        })
-        .catch((error) => {
-          console.error("Wishlist loading error:", error);
-
-          // Fallback to localStorage
-          const savedWishlist =
-            JSON.parse(localStorage.getItem("wishlist")) || [];
-
-          setWishlist(savedWishlist);
-          setLoading(false);
-        });
-
-      return;
-    }
-
-    // Not logged in → localStorage
-    const savedWishlist =
-      JSON.parse(localStorage.getItem("wishlist")) || [];
-
-    setWishlist(savedWishlist);
-    setLoading(false);
+    window.dispatchEvent(new Event("cart-wishlist-updated"));
   }, []);
 
-  // =========================
-  // REMOVE FROM WISHLIST
-  // =========================
+  useEffect(() => {
+    let active = true;
+
+    const loadWishlist = async () => {
+      setLoading(true);
+
+      const token = localStorage.getItem("authToken");
+
+      if (!token) {
+        if (active) {
+          setWishlist(getSavedWishlist());
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/wishlist`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not load your wishlist. Please try again.");
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("The server returned an invalid wishlist.");
+        }
+
+        if (active) {
+          saveWishlist(data);
+        }
+      } catch (error) {
+        console.error("Wishlist loading error:", error);
+
+        if (active) {
+          setWishlist([]);
+          localStorage.setItem("wishlist", JSON.stringify([]));
+          setMessage(error.message || "Unable to load your wishlist.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadWishlist();
+
+    return () => {
+      active = false;
+    };
+  }, [saveWishlist]);
+
   const removeFromWishlist = async (productId) => {
     const token = localStorage.getItem("authToken");
 
-    // =========================
-    // LOGGED-IN USER
-    // =========================
     if (token) {
       try {
         const response = await fetch(
@@ -87,97 +119,63 @@ function Wishlist() {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(
-            data.message || "Failed to remove wishlist item"
-          );
+          throw new Error(data.message || "Failed to remove wishlist item.");
         }
 
-        // Backend returns updated wishlist
-        setWishlist(data.wishlist);
+        if (!Array.isArray(data.wishlist)) {
+          throw new Error("The server returned an invalid wishlist.");
+        }
 
-        // Keep localStorage in sync
-        localStorage.setItem(
-          "wishlist",
-          JSON.stringify(data.wishlist)
-        );
-
-        setMessage("Removed from wishlist");
-
-        setTimeout(() => {
-          setMessage("");
-        }, 2000);
+        saveWishlist(data.wishlist);
+        showMessage("Removed from wishlist");
       } catch (error) {
         console.error("Remove wishlist error:", error);
-
-        setMessage(error.message);
-
-        setTimeout(() => {
-          setMessage("");
-        }, 2000);
+        showMessage(error.message || "Could not remove item.");
       }
 
       return;
     }
 
-    // =========================
-    // NOT LOGGED IN
-    // =========================
     const updatedWishlist = wishlist.filter(
       (item) => String(item._id) !== String(productId)
     );
 
-    setWishlist(updatedWishlist);
-
-    localStorage.setItem(
-      "wishlist",
-      JSON.stringify(updatedWishlist)
-    );
-
-    setMessage("Removed from wishlist");
-
-    setTimeout(() => {
-      setMessage("");
-    }, 2000);
+    saveWishlist(updatedWishlist);
+    showMessage("Removed from wishlist");
   };
 
-  // =========================
-  // ADD TO CART
-  // =========================
   const addToCart = (product) => {
-    let cart =
-      JSON.parse(localStorage.getItem("cart")) || [];
+    const cart = getSavedCart();
 
-    const existingItem = cart.find(
-      (item) => item._id === product._id
+    const existingIndex = cart.findIndex(
+      (item) => String(item._id) === String(product._id)
     );
 
-    if (existingItem) {
-      existingItem.quantity += 1;
+    if (existingIndex !== -1) {
+      const existingItem = { ...cart[existingIndex] };
+      existingItem.quantity = Math.max(
+        1,
+        Number(existingItem.quantity) || 1
+      ) + 1;
+
+      cart[existingIndex] = existingItem;
     } else {
       cart.push({
         ...product,
-        price: `₹${product.price}`,
+        price:
+          typeof product.price === "number"
+            ? `₹${product.price}`
+            : product.price,
         quantity: 1
       });
     }
 
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(cart)
-    );
-
+    localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cart-wishlist-updated"));
 
-    setMessage(`${product.name} added to cart!`);
-
-    setTimeout(() => {
-      setMessage("");
-    }, 2000);
+    showMessage(`${product.name} added to cart!`);
   };
 
-  // =========================
-  // LOADING
-  // =========================
   if (loading) {
     return (
       <div className="wishlist-page">
@@ -192,167 +190,109 @@ function Wishlist() {
     );
   }
 
-  // =========================
-  // EMPTY WISHLIST
-  // =========================
-  if (wishlist.length === 0) {
-    return (
-      <div className="wishlist-page">
-
-        <div className="wishlist-header">
-          <h1>My Wishlist</h1>
-        </div>
-
-        <div className="wishlist-empty">
-
-          <div className="wishlist-empty-icon">
-            ♡
-          </div>
-
-          <h2>Your Wishlist is Empty</h2>
-
-          <p>
-            Save your favourite products here and
-            access them anytime.
-          </p>
-
-          <button
-            onClick={() => navigate("/categories")}
-          >
-            Continue Shopping
-          </button>
-
-        </div>
-
-      </div>
-    );
-  }
-
-  // =========================
-  // WISHLIST PAGE
-  // =========================
   return (
     <div className="wishlist-page">
-
-      {/* Green Toast */}
       {message && (
-        <div className="wishlist-toast">
+        <div className="wishlist-toast" role="status">
           ✓ {message}
         </div>
       )}
 
       <div className="wishlist-header">
-
         <div>
           <h1>My Wishlist</h1>
-
           <p>
-            {wishlist.length}{" "}
-            {wishlist.length === 1
-              ? "item"
-              : "items"}{" "}
-            saved
+            {wishlist.length} {wishlist.length === 1 ? "item" : "items"} saved
           </p>
         </div>
-
       </div>
 
-      <div className="wishlist-container">
+      {wishlist.length === 0 ? (
+        <div className="wishlist-empty">
+          <div className="wishlist-empty-icon">♡</div>
+          <h2>Your Wishlist is Empty</h2>
+          <p>Save your favourite products here and access them anytime.</p>
 
-        {wishlist.map((product) => (
-
-          <div
-            className="wishlist-card"
-            key={product._id}
-          >
-
-            {/* Remove X */}
-            <button
-              className="wishlist-remove"
-              onClick={() =>
-                removeFromWishlist(product._id)
-              }
-              title="Remove from wishlist"
-            >
-              ×
-            </button>
-
-            {/* Product Image */}
-            <div
-              className="wishlist-image-box"
-              onClick={() =>
-                navigate(
-                  `/product/${product._id}`
-                )
-              }
-            >
-              <img
-                src={product.image}
-                alt={product.name}
-              />
-            </div>
-
-            {/* Product Information */}
-            <div className="wishlist-info">
-
-              <p className="wishlist-category">
-                {product.category}
-              </p>
-
-              <h3
-                onClick={() =>
-                  navigate(
-                    `/product/${product._id}`
-                  )
-                }
+          <button type="button" onClick={() => navigate("/categories")}>
+            Continue Shopping
+          </button>
+        </div>
+      ) : (
+        <div className="wishlist-container">
+          {wishlist.map((product) => (
+            <div className="wishlist-card" key={product._id}>
+              <button
+                type="button"
+                className="wishlist-remove"
+                onClick={() => removeFromWishlist(product._id)}
+                title="Remove from wishlist"
+                aria-label={`Remove ${product.name} from wishlist`}
               >
-                {product.name}
-              </h3>
+                ×
+              </button>
 
-              <div className="wishlist-rating">
-                <span>★ 4.5</span>
-                <small>
-                  {" "}
-                  | 128 ratings
-                </small>
-              </div>
-
-              <div className="wishlist-price">
-                ₹{product.price}
-              </div>
-
-              <div className="wishlist-actions">
-
-                {/* Add To Cart */}
-                <button
-                  className="wishlist-cart-btn"
-                  onClick={() =>
-                    addToCart(product)
+              <div
+                className="wishlist-image-box"
+                onClick={() => navigate(`/product/${product._id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    navigate(`/product/${product._id}`);
                   }
-                >
-                  🛒 Add to Cart
-                </button>
-
-                {/* Remove From Wishlist */}
-                <button
-                  className="wishlist-view-btn"
-                  onClick={() =>
-                    removeFromWishlist(product._id)
-                  }
-                >
-                  Remove from Wishlist
-                </button>
-
+                }}
+              >
+                <img src={product.image} alt={product.name} />
               </div>
 
+              <div className="wishlist-info">
+                <p className="wishlist-category">{product.category}</p>
+
+                <h3
+                  onClick={() => navigate(`/product/${product._id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      navigate(`/product/${product._id}`);
+                    }
+                  }}
+                >
+                  {product.name}
+                </h3>
+
+                <div className="wishlist-rating">
+                  <span>★ 4.5</span>
+                  <small> | 128 ratings</small>
+                </div>
+
+                <div className="wishlist-price">
+                  ₹
+                  {String(product.price ?? "").replace(/[^\d.]/g, "")}
+                </div>
+
+                <div className="wishlist-actions">
+                  <button
+                    type="button"
+                    className="wishlist-cart-btn"
+                    onClick={() => addToCart(product)}
+                  >
+                    🛒 Add to Cart
+                  </button>
+
+                  <button
+                    type="button"
+                    className="wishlist-view-btn"
+                    onClick={() => removeFromWishlist(product._id)}
+                  >
+                    Remove from Wishlist
+                  </button>
+                </div>
+              </div>
             </div>
-
-          </div>
-
-        ))}
-
-      </div>
-
+          ))}
+        </div>
+      )}
     </div>
   );
 }
