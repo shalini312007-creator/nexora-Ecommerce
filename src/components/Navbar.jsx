@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, Search, ShoppingCart } from "lucide-react";
@@ -14,10 +15,18 @@ function getStoredArray(key) {
   }
 }
 
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem("currentUser")) || null;
+  } catch {
+    return null;
+  }
+}
+
 function Navbar() {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(getStoredUser);
   const [searchText, setSearchText] = useState("");
   const [products, setProducts] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
@@ -29,13 +38,20 @@ function Navbar() {
   ========================= */
 
   useEffect(() => {
-    try {
-      setUser(JSON.parse(localStorage.getItem("currentUser")));
-    } catch {
-      setUser(null);
-    }
+    const updateNavbar = () => {
+      const storedUser = getStoredUser();
 
-    const updateCounts = () => {
+      setUser(storedUser);
+
+      // Do not show old account data when logged out.
+      if (!storedUser) {
+        setWishlistCount(0);
+        setCartCount(0);
+        setSearchText("");
+        setSuggestions([]);
+        return;
+      }
+
       setWishlistCount(getStoredArray("wishlist").length);
 
       const cart = getStoredArray("cart");
@@ -48,30 +64,40 @@ function Navbar() {
       );
     };
 
-    updateCounts();
+    updateNavbar();
 
-    window.addEventListener("storage", updateCounts);
-    window.addEventListener("cart-wishlist-updated", updateCounts);
+    window.addEventListener("storage", updateNavbar);
+    window.addEventListener("cart-wishlist-updated", updateNavbar);
+    window.addEventListener("auth-changed", updateNavbar);
 
     return () => {
-      window.removeEventListener("storage", updateCounts);
-      window.removeEventListener("cart-wishlist-updated", updateCounts);
+      window.removeEventListener("storage", updateNavbar);
+      window.removeEventListener("cart-wishlist-updated", updateNavbar);
+      window.removeEventListener("auth-changed", updateNavbar);
     };
   }, []);
 
   /* =========================
-   FETCH PRODUCTS
-========================= */
+     FETCH PRODUCTS
+  ========================= */
 
-useEffect(() => {
-  getProducts()
-    .then((data) => {
-      setProducts(Array.isArray(data) ? data : []);
-    })
-    .catch((error) => {
-      console.error("Navbar search error:", error);
-    });
-}, []);
+  useEffect(() => {
+    let active = true;
+
+    getProducts()
+      .then((data) => {
+        if (active) {
+          setProducts(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch((error) => {
+        console.error("Navbar search error:", error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   /* =========================
      SEARCH SUGGESTIONS
@@ -110,7 +136,6 @@ useEffect(() => {
     if (!query) return;
 
     setSuggestions([]);
-
     navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
@@ -122,71 +147,44 @@ useEffect(() => {
     setSearchText(product.name);
     setSuggestions([]);
 
-    navigate(
-      `/search?q=${encodeURIComponent(product.name)}`
-    );
+    navigate(`/search?q=${encodeURIComponent(product.name)}`);
   };
 
   return (
     <nav className="navbar">
+      {/* LOGO */}
 
-      {/* =========================
-          LOGO
-      ========================= */}
+      <Link to="/" className="logo">
+        <span className="logo-badge">
+          <img src={logoIcon} alt="" className="logo-icon" />
+        </span>
 
-<Link to="/" className="logo">
-  <span className="logo-badge">
-    <img src={logoIcon} alt="" className="logo-icon" />
-  </span>
-  <span className="logo-text-wrap">
-    <span className="logo-text">Nexora</span>
-    <span className="logo-tagline">Live Better</span>
-  </span>
-</Link>
+        <span className="logo-text-wrap">
+          <span className="logo-text">Nexora</span>
+          <span className="logo-tagline">Live Better</span>
+        </span>
+      </Link>
 
-      {/* =========================
-          NAVIGATION LINKS
-      ========================= */}
+      {/* NAVIGATION LINKS */}
 
       <ul className="nav-links">
-        <li>
-          <Link to="/">Home</Link>
-        </li>
-
-        <li>
-          <Link to="/categories">Categories</Link>
-        </li>
-
-        <li>
-          <Link to="/about">About</Link>
-        </li>
-
-        <li>
-          <Link to="/contact">Contact</Link>
-        </li>
+        <li><Link to="/">Home</Link></li>
+        <li><Link to="/categories">Categories</Link></li>
+        <li><Link to="/about">About</Link></li>
+        <li><Link to="/contact">Contact</Link></li>
       </ul>
 
-      {/* =========================
-          SEARCH BAR
-      ========================= */}
+      {/* SEARCH BAR */}
 
-      <form
-        className="navbar-search"
-        onSubmit={handleSearch}
-      >
+      <form className="navbar-search" onSubmit={handleSearch}>
         <div className="search-input-wrapper">
-
           <input
             type="search"
             placeholder="Search products..."
             value={searchText}
-            onChange={(event) =>
-              setSearchText(event.target.value)
-            }
+            onChange={(event) => setSearchText(event.target.value)}
             aria-label="Search products"
           />
-
-          {/* SEARCH ICON INSIDE SEARCH BOX */}
 
           <button
             type="submit"
@@ -195,106 +193,74 @@ useEffect(() => {
           >
             <Search size={18} strokeWidth={2} />
           </button>
-
         </div>
-
-        {/* =========================
-            SEARCH SUGGESTIONS
-        ========================= */}
 
         {suggestions.length > 0 && (
           <div className="search-suggestions">
-
             {suggestions.map((product) => (
               <button
                 type="button"
                 className="search-suggestion-item"
                 key={product._id}
-                onClick={() =>
-                  handleSuggestionClick(product)
-                }
+                onClick={() => handleSuggestionClick(product)}
               >
-                <img
-                  src={product.image}
-                  alt=""
-                />
+                <img src={product.image} alt="" />
 
                 <span className="suggestion-info">
-                  <strong>
-                    {product.name}
-                  </strong>
-
-                  <span>
-                    ₹{product.price}
-                  </span>
+                  <strong>{product.name}</strong>
+                  <span>₹{product.price}</span>
                 </span>
               </button>
             ))}
-
           </div>
         )}
       </form>
 
-      {/* =========================
-          NAVBAR ACTIONS
-      ========================= */}
+      {/* NAVBAR ACTIONS */}
 
       <div className="navbar-actions">
-
-        {/* Wishlist */}
+        {/* WISHLIST */}
 
         <Link
           to="/wishlist"
           className="navbar-icon-link wishlist-link"
           aria-label={`Wishlist${
-            wishlistCount > 0
-              ? `, ${wishlistCount} items`
-              : ""
+            wishlistCount > 0 ? `, ${wishlistCount} items` : ""
           }`}
           title="Wishlist"
         >
           <Heart size={21} />
 
           {wishlistCount > 0 && (
-            <span className="navbar-badge">
-              {wishlistCount}
-            </span>
+            <span className="navbar-badge">{wishlistCount}</span>
           )}
         </Link>
 
-        {/* Cart */}
+        {/* CART */}
 
         <Link
           to="/cart"
           className="navbar-icon-link cart-link"
           aria-label={`Cart${
-            cartCount > 0
-              ? `, ${cartCount} items`
-              : ""
+            cartCount > 0 ? `, ${cartCount} items` : ""
           }`}
         >
           <ShoppingCart size={21} />
-
-          <span className="icon-label">
-            Cart
-          </span>
+          <span className="icon-label">Cart</span>
 
           {cartCount > 0 && (
-            <span className="navbar-badge">
-              {cartCount}
-            </span>
+            <span className="navbar-badge">{cartCount}</span>
           )}
         </Link>
 
-        {/* Login / Profile */}
+        {/* LOGIN / PROFILE */}
 
         <Link
           className="login-btn"
           to={user ? "/profile" : "/login"}
         >
-          {user ? user.name : "Login / Register"}
+          {user?.name || "Login / Register"}
         </Link>
-
       </div>
     </nav>
   );
