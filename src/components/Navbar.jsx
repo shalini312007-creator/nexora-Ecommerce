@@ -1,10 +1,10 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Heart, Search, ShoppingCart } from "lucide-react";
 import logoIcon from "../assets/nexora-icon.png";
 import "./Navbar.css";
-import { getProducts } from "../api/productApi";
+import { API_BASE_URL, getProducts } from "../api/productApi";
 
 function getStoredArray(key) {
   try {
@@ -33,54 +33,104 @@ function Navbar() {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
 
-  /* =========================
-     USER + CART + WISHLIST
-  ========================= */
+  const updateLocalCounts = useCallback(() => {
+    const storedUser = getStoredUser();
+    setUser(storedUser);
 
-  useEffect(() => {
-    const updateNavbar = () => {
-      const storedUser = getStoredUser();
+    if (!storedUser) {
+      setWishlistCount(0);
+      setCartCount(0);
+      return;
+    }
 
-      setUser(storedUser);
+    setWishlistCount(getStoredArray("wishlist").length);
 
-      // Do not show old account data when logged out.
-      if (!storedUser) {
-        setWishlistCount(0);
-        setCartCount(0);
-        setSearchText("");
-        setSuggestions([]);
+    const cart = getStoredArray("cart");
+    setCartCount(
+      cart.reduce(
+        (total, item) => total + (Number(item.quantity) || 1),
+        0
+      )
+    );
+  }, []);
+
+  // Fetch the logged-in user's wishlist directly after login.
+  const refreshWishlist = useCallback(async () => {
+    const storedUser = getStoredUser();
+    const token = localStorage.getItem("authToken");
+
+    setUser(storedUser);
+
+    if (!storedUser || !token) {
+      setWishlistCount(0);
+      setCartCount(0);
+      return;
+    }
+
+    updateLocalCounts();
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/wishlist`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to refresh wishlist count.");
+      }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid wishlist response.");
+      }
+
+      // Avoid applying a previous user's response after logout/account change.
+      if (
+        localStorage.getItem("authToken") !== token ||
+        !getStoredUser()
+      ) {
         return;
       }
 
-      setWishlistCount(getStoredArray("wishlist").length);
+      localStorage.setItem("wishlist", JSON.stringify(data));
+      setWishlistCount(data.length);
+    } catch (error) {
+      console.error("Navbar wishlist error:", error);
+      // Keep the locally available count if the request fails.
+    }
+  }, [updateLocalCounts]);
 
-      const cart = getStoredArray("cart");
+  useEffect(() => {
+    updateLocalCounts();
+    refreshWishlist();
 
-      setCartCount(
-        cart.reduce(
-          (total, item) => total + (Number(item.quantity) || 1),
-          0
-        )
-      );
+    const handleAuthChange = () => {
+      updateLocalCounts();
+      refreshWishlist();
     };
 
-    updateNavbar();
+    const handleStorage = () => {
+      updateLocalCounts();
 
-    window.addEventListener("storage", updateNavbar);
-    window.addEventListener("cart-wishlist-updated", updateNavbar);
-    window.addEventListener("auth-changed", updateNavbar);
+      if (localStorage.getItem("authToken")) {
+        refreshWishlist();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("cart-wishlist-updated", updateLocalCounts);
+    window.addEventListener("auth-changed", handleAuthChange);
 
     return () => {
-      window.removeEventListener("storage", updateNavbar);
-      window.removeEventListener("cart-wishlist-updated", updateNavbar);
-      window.removeEventListener("auth-changed", updateNavbar);
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("cart-wishlist-updated", updateLocalCounts);
+      window.removeEventListener("auth-changed", handleAuthChange);
     };
-  }, []);
+  }, [refreshWishlist, updateLocalCounts]);
 
-  /* =========================
-     FETCH PRODUCTS
-  ========================= */
-
+  // Load products for search suggestions.
   useEffect(() => {
     let active = true;
 
@@ -99,10 +149,7 @@ function Navbar() {
     };
   }, []);
 
-  /* =========================
-     SEARCH SUGGESTIONS
-  ========================= */
-
+  // Search suggestions.
   useEffect(() => {
     const searchValue = searchText.trim().toLowerCase();
 
@@ -115,45 +162,30 @@ function Navbar() {
       const name = product.name?.toLowerCase() || "";
       const category = product.category?.toLowerCase() || "";
 
-      return (
-        name.includes(searchValue) ||
-        category.includes(searchValue)
-      );
+      return name.includes(searchValue) || category.includes(searchValue);
     });
 
     setSuggestions(matches.slice(0, 5));
   }, [searchText, products]);
 
-  /* =========================
-     SEARCH
-  ========================= */
-
   const handleSearch = (event) => {
     event.preventDefault();
 
     const query = searchText.trim();
-
     if (!query) return;
 
     setSuggestions([]);
     navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
-  /* =========================
-     SUGGESTION CLICK
-  ========================= */
-
   const handleSuggestionClick = (product) => {
     setSearchText(product.name);
     setSuggestions([]);
-
     navigate(`/search?q=${encodeURIComponent(product.name)}`);
   };
 
   return (
     <nav className="navbar">
-      {/* LOGO */}
-
       <Link to="/" className="logo">
         <span className="logo-badge">
           <img src={logoIcon} alt="" className="logo-icon" />
@@ -165,16 +197,12 @@ function Navbar() {
         </span>
       </Link>
 
-      {/* NAVIGATION LINKS */}
-
       <ul className="nav-links">
         <li><Link to="/">Home</Link></li>
         <li><Link to="/categories">Categories</Link></li>
         <li><Link to="/about">About</Link></li>
         <li><Link to="/contact">Contact</Link></li>
       </ul>
-
-      {/* SEARCH BAR */}
 
       <form className="navbar-search" onSubmit={handleSearch}>
         <div className="search-input-wrapper">
@@ -216,11 +244,7 @@ function Navbar() {
         )}
       </form>
 
-      {/* NAVBAR ACTIONS */}
-
       <div className="navbar-actions">
-        {/* WISHLIST */}
-
         <Link
           to="/wishlist"
           className="navbar-icon-link wishlist-link"
@@ -236,8 +260,6 @@ function Navbar() {
           )}
         </Link>
 
-        {/* CART */}
-
         <Link
           to="/cart"
           className="navbar-icon-link cart-link"
@@ -252,8 +274,6 @@ function Navbar() {
             <span className="navbar-badge">{cartCount}</span>
           )}
         </Link>
-
-        {/* LOGIN / PROFILE */}
 
         <Link
           className="login-btn"
