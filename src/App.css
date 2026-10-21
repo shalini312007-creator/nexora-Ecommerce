@@ -158,3 +158,42 @@ body{
   text-align:center;
   padding-bottom:15px;
 }
+
+/* Prevent accidental horizontal overflow */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+body {
+  overflow-wrap: break-word;
+}
+
+img,
+video,
+iframe {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  #root {
+    min-height: 100vh;
+  }
+
+  .navbar,
+  footer {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
