@@ -1,34 +1,24 @@
 
+/* =========================================
+   NEXORA FOOTER
+   Professional responsive styling
+========================================= */
 
 .footer {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
   background: linear-gradient(135deg, #111827, #1f2937);
   color: #ffffff;
+
   text-align: center;
   padding: 45px 25px 25px;
   margin-top: 40px;
+
   box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08);
-}
-
-/* Footer text */
-
-.footer p {
-  margin: 8px 0;
-  font-size: 15px;
-  color: #d1d5db;
-  line-height: 1.6;
-}
-
-/* Links if your Footer.jsx contains links */
-
-.footer a {
-  color: #a5b4fc;
-  text-decoration: none;
-  margin: 0 10px;
-  transition: 0.3s ease;
-}
-
-.footer a:hover {
-  color: #ffffff;
 }
 
 /* Footer heading */
@@ -37,25 +27,64 @@
   margin: 0 0 12px;
   font-size: 25px;
   font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Footer text */
+
+.footer p {
+  margin: 8px 0;
+  color: #d1d5db;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+/* Footer links */
+
+.footer a {
+  display: inline-block;
+  color: #a5b4fc;
+  text-decoration: none;
+  margin: 5px 10px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+
+  transition: color 0.2s ease;
+}
+
+.footer a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.footer a:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 4px;
+  border-radius: 2px;
 }
 
 /* Divider */
 
 .footer hr {
+  width: 100%;
+  max-width: 900px;
+  box-sizing: border-box;
+
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
+
   margin: 25px auto 20px;
-  max-width: 900px;
 }
 
-/* =========================
+/* =========================================
    TABLET
-========================= */
+========================================= */
 
 @media (max-width: 768px) {
-
   .footer {
-    padding: 35px 20px 20px;
+    padding: 35px 20px 22px;
   }
 
   .footer h2 {
@@ -66,29 +95,56 @@
     font-size: 14px;
   }
 
+  .footer hr {
+    margin: 22px auto 18px;
+  }
 }
 
-/* =========================
+/* =========================================
    MOBILE
-========================= */
+========================================= */
 
 @media (max-width: 480px) {
-
   .footer {
-    padding: 30px 15px 18px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 28px 16px 18px;
+    margin-top: 28px;
   }
 
   .footer h2 {
     font-size: 20px;
+    line-height: 1.4;
   }
 
   .footer p {
     font-size: 13px;
+    line-height: 1.7;
   }
 
   .footer a {
-    display: inline-block;
     margin: 5px 7px;
+    font-size: 14px;
   }
 
+  .footer hr {
+    margin: 20px auto 16px;
+  }
+}
+
+/* Extra-small phones */
+
+@media (max-width: 360px) {
+  .footer {
+    padding: 24px 12px 16px;
+  }
+
+  .footer h2 {
+    font-size: 19px;
+  }
+
+  .footer a {
+    margin: 5px;
+  }
 }
