@@ -670,3 +670,194 @@
   color: #f0b429;
   letter-spacing: 0.3px;
 }
+
+/* =========================================
+   NEXORA - MOBILE NAVBAR RESPONSIVENESS
+   Desktop styles remain unchanged
+========================================= */
+
+@media (max-width: 768px) {
+  .navbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "logo actions"
+      "search search"
+      "links links";
+    align-items: center;
+    gap: 14px 10px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+
+  .navbar > .logo {
+    grid-area: logo;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .logo-badge {
+    width: 54px;
+    height: 54px;
+    flex-shrink: 0;
+  }
+
+  .logo-icon {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .logo-text {
+    font-size: 25px;
+  }
+
+  .logo-tagline {
+    font-size: 14px;
+  }
+
+  .navbar-actions {
+    grid-area: actions;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .navbar-actions .navbar-icon-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .navbar-actions .login-btn {
+    max-width: 112px;
+    padding: 10px 12px;
+    font-size: 14px;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .navbar-search {
+    grid-area: search;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .search-input-wrapper input {
+    width: 100%;
+    min-width: 0;
+    height: 48px;
+    padding: 0 48px 0 14px;
+    box-sizing: border-box;
+    font-size: 16px;
+  }
+
+  .search-input-wrapper .search-button {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .search-suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    z-index: 1000;
+  }
+
+  .nav-links {
+    grid-area: links;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 4px 0 0;
+    box-sizing: border-box;
+  }
+
+  .nav-links li {
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-links a {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 380px) {
+  .navbar {
+    padding: 12px;
+    gap: 12px 8px;
+  }
+
+  .logo-badge {
+    width: 44px;
+    height: 44px;
+  }
+
+  .logo-text {
+    font-size: 21px;
+  }
+
+  .logo-tagline {
+    font-size: 12px;
+  }
+
+  .navbar-actions {
+    gap: 8px;
+  }
+
+  .navbar-actions .login-btn {
+    max-width: 90px;
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  .nav-links {
+    gap: 10px 14px;
+  }
+
+  .nav-links a {
+    font-size: 14px;
+  }
+}
